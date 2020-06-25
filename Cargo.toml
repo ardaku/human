@@ -1,0 +1,43 @@
+# human
+#
+# Copyright (c) 2020 Jeron Aldaron Lau
+# 
+# Licensed under the Apache License, Version 2.0, <LICENSE-APACHE or
+# https://apache.org/licenses/LICENSE-2.0>, or the Zlib License, <LICENSE-ZLIB
+# or http://opensource.org/licenses/Zlib>, at your option. This file may not be
+# copied, modified, or distributed except according to those terms.
+
+[package]
+name = "human"
+version = "0.1.0"
+authors = ["Jeron Aldaron Lau <jeronlau@plopgrizzly.com>"]
+license = "Apache-2.0 OR Zlib"
+
+description = "Human interface devices"
+repository = "https://github.com/libcala/human"
+documentation = "https://docs.rs/human"
+homepage = "https://github.com/libcala/human/blob/master/CHANGELOG.md"
+include = ["Cargo.toml", "README.md", "LICENSE-ZLIB", "LICENSE-APACHE", "src/*"]
+categories = []
+keywords = []
+readme = "README.md"
+edition = "2018"
+
+[dependencies.stick]
+version = "0.10"
+optional = true
+
+[dependencies.window]
+path = "../window"
+optional = true
+
+[dependencies.cala_core]
+version = "0.1"
+
+[build-dependencies]
+
+[dev-dependencies]
+
+[package.metadata.docs.rs]
+all-features = true
+default-target = "x86_64-unknown-linux-gnu"
