@@ -39,3 +39,9 @@
     unused_qualifications,
     variant_size_differences
 )]
+
+mod input_mode;
+mod gamepad;
+
+pub use input_mode::{PointerMode, GamepadMode, KeyboardMode};
+pub use gamepad::GameInput;

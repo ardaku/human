@@ -25,14 +25,13 @@ edition = "2018"
 
 [dependencies.stick]
 version = "0.10"
-optional = true
-
-[dependencies.window]
-path = "../window"
-optional = true
 
 [dependencies.cala_core]
 version = "0.1"
+
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies.window]
+path = "../window"
+optional = true
 
 [build-dependencies]
 
