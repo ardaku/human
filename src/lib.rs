@@ -40,8 +40,8 @@
     variant_size_differences
 )]
 
-mod input_mode;
-mod gamepad;
+mod mode;
+mod input;
 
-pub use input_mode::{PointerMode, GamepadMode, KeyboardMode};
-pub use gamepad::GameInput;
+pub use mode::Mode;
+pub use input::{TextInput, GameInput, UiInput, Input};
