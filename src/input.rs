@@ -318,14 +318,33 @@ pub async fn input<'a>() -> Input<'a> {
                 }
             }
             (id, event) => {
-                println!("p{}: {}", id + 1, event);
                 use Event::*;
                 use Input::Game;
                 break 'input match event {
+                    Prev(true) => Game(id, GameInput::Pause),
+                    Next(true) => Game(id, GameInput::Menu),
                     ActionA(p) => Game(id, GameInput::A(p)),
                     ActionB(p) => Game(id, GameInput::B(p)),
                     ActionH(p) => Game(id, GameInput::H(p)),
                     ActionV(p) => Game(id, GameInput::V(p)),
+                    DpadUp(p) => Game(id, GameInput::Up(p)),
+                    DpadDown(p) => Game(id, GameInput::Down(p)),
+                    DpadLeft(p) => Game(id, GameInput::Left(p)),
+                    DpadRight(p) => Game(id, GameInput::Right(p)),
+                    TriggerL(p) => Game(id, GameInput::TriggerL(p)),
+                    TriggerR(p) => Game(id, GameInput::TriggerR(p)),
+                    BumperL(p) => Game(id, GameInput::BumperL(p)),
+                    BumperR(p) => Game(id, GameInput::BumperR(p)),
+                    JoyX(p) => Game(id, GameInput::JoyX(p)),
+                    JoyY(p) => Game(id, GameInput::JoyY(p)),
+                    CamX(p) | JoyZ(p) => Game(id, GameInput::CamX(p)),
+                    CamY(p) => Game(id, GameInput::CamY(p)),
+                    JoyPush(p) => Game(id, GameInput::JoyPush(p)),
+                    CamPush(p) => Game(id, GameInput::CamPush(p)),
+                    PaddleRight(p) => Game(id, GameInput::ComboRight(p)),
+                    PaddleLeft(p) => Game(id, GameInput::ComboLeft(p)),
+                    PaddleRightPinky(p) => Game(id, GameInput::ComboRightPinky(p)),
+                    PaddleLeftPinky(p) => Game(id, GameInput::ComboLeftPinky(p)),
                     _ => continue 'input,
                 }
             }
