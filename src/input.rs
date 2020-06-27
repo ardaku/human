@@ -1,13 +1,19 @@
+use std::cell::RefCell;
+use pasts::prelude::*;
+use stick::{Event, Hub, Pad};
+
 /// Input from any human interface device
 #[derive(Copy, Clone, Debug)]
 pub enum Input<'a> {
     /// User has typed something
     Text(TextInput<'a>),
     /// User has pushed a button on a game controller or emulated
-    Game(GameInput),
+    Game(usize, GameInput),
     /// User has interacted with the user interface (usually a GUI, but can be
     /// auditory or other)
     Ui(UiInput),
+    /// User has requested to exit
+    Exit,
 }
 
 /// User interface input; touchscreen, trackpad, mouse, keyboard or gamepad
@@ -25,9 +31,9 @@ pub enum UiInput {
     /// LeftClick / Touch Held + Movement
     Drag(f32, f32),
     /// Tab/BumperR (1-D focus selector next)
-    Tab,
+    Next,
     /// Shift-Tab/BumperL (1-D focus selector previous)
-    UnTab,
+    Prev,
     /// ArrowUp/DpadUp/JoystickUp (2-D Focus selector up)
     Up,
     /// ArrowDown/DpadDown/JoystickDown (2-D Focus selector down)
@@ -38,7 +44,8 @@ pub enum UiInput {
     Right,
 }
 
-/// Game input, W3 Standard gamepad with extensions events for PC-style games.
+/// Game input, W3 Standard gamepad with extensions events for PC/Console-style
+/// games.
 #[derive(Copy, Clone, Debug)]
 pub enum GameInput {
     /// G Key or Forward Button/Press Start Button
@@ -203,4 +210,175 @@ pub enum TextInput<'a> {
     Open,
     /// Alt-N / Ctrl-Shift-N (New With Template)
     Template,
+}
+
+enum Pads {
+    Gameplay(Vec<Option<Pad>>),
+    Renumbering(Vec<Pad>),
+}
+
+impl Pads {
+    // Is renumbering on
+    fn renumber(&self) -> bool {
+        match self {
+            Pads::Gameplay(_) => false,
+            Pads::Renumbering(_) => true,
+        }
+    }
+}
+
+// Input global context.
+struct Context {
+    hub: Hub,
+    pads: Pads,
+}
+
+thread_local! {
+    static CONTEXT: RefCell<Option<Box<Context>>> = RefCell::new(Some(Box::new(Context {
+        hub: Hub::new(),
+        pads: Pads::Gameplay(Vec::new()),
+    })));
+}
+
+/// Turn gamepad renumbering on or off.
+///
+/// This is useful for the start of a video game when you don't want gaps
+/// between player numbers.  By default it's off.  During gameplay you should
+/// turn it back off so that the players don't change what character they are
+/// controlling.  For single-player games or multiplayer over multiple devices
+/// you don't have to worry about this setting.
+pub fn renumber(on: bool) {
+    let mut cx = CONTEXT.with(|cx| cx.borrow_mut().take().expect("HIDs can't be used in multiple places at once"));
+
+    if on != cx.pads.renumber() {
+        // Toggle
+        match cx.pads {
+            Pads::Gameplay(pads) => {
+                let mut new = Vec::new();
+                for pad in pads {
+                    if let Some(pad) = pad {
+                        new.push(pad);
+                    }
+                }
+                cx.pads = Pads::Renumbering(new);
+            }
+            Pads::Renumbering(pads) => {
+                let mut new = Vec::new();
+                for pad in pads {
+                    new.push(Some(pad));
+                }
+                cx.pads = Pads::Gameplay(new);
+            }
+        }
+    }
+    
+    CONTEXT.with(|new| *new.borrow_mut() = Some(cx));
+}
+
+/// Get user input from terminal and gamepads
+pub async fn input<'a>() -> Input<'a> {
+    let mut cx = CONTEXT.with(|cx| cx.borrow_mut().take().expect("HIDs can't be used in multiple places at once"));
+
+    let input = 'input: loop {
+        let mut pads_fut = match cx.pads {
+            Pads::Gameplay(ref mut pads) => pads.select(),
+            Pads::Renumbering(ref mut pads) => pads.select(),
+        };
+
+        match [cx.hub.fut(), pads_fut.fut()].select().await.1 {
+            (_, Event::Connect(new)) => {
+                match cx.pads {
+                    Pads::Gameplay(ref mut pads) => {
+                        for pad in pads.iter_mut() {
+                            if pad.is_none() {
+                                *pad = Some(*new);
+                                continue 'input;
+                            }
+                        }
+                        pads.push(Some(*new));
+                    },
+                    Pads::Renumbering(ref mut pads) => pads.push(*new),
+                }
+            }
+            (id, Event::Disconnect) => {
+                match cx.pads {
+                    Pads::Gameplay(ref mut pads) => *pads.get_mut(id).unwrap() = None,
+                    Pads::Renumbering(ref mut pads) => { pads.swap_remove(id); }
+                }
+            }
+            (id, Event::Home(true)) => {
+                match cx.pads {
+                    Pads::Gameplay(_) => if id == 0 {
+                        break 'input Input::Exit;
+                    }
+                    Pads::Renumbering(ref mut pads) => {
+                        let pad = pads.swap_remove(id);
+                        pads.push(pad);
+                    }
+                }
+            }
+            (id, event) => {
+                println!("p{}: {}", id + 1, event);
+                use Event::*;
+                use Input::Game;
+                break 'input match event {
+                    ActionA(p) => Game(id, GameInput::A(p)),
+                    ActionB(p) => Game(id, GameInput::B(p)),
+                    ActionH(p) => Game(id, GameInput::H(p)),
+                    ActionV(p) => Game(id, GameInput::V(p)),
+                    _ => continue 'input,
+                }
+            }
+        }
+    };
+    
+    CONTEXT.with(|new| *new.borrow_mut() = Some(cx));
+    input
+}
+
+/// Send rumble effect to a mobile device or gamepad(s).
+///
+/// If id is `Some` then the gamepad with the ID specified will rumble.  If id
+/// is `None` then all of the gamepads will rumble.  The rumbling will continue
+/// until you call this function again with `power` set to `0.0`.  Maximum
+/// `power` is `1.0`.  Use `None` for mobile devices.  Make sure to use caution
+/// when testing to ensure that no nearby fragile items might break from the
+/// rumble effect.
+///
+/// # Notes
+/// - `power` will automatically be clamped between `0.0` and `1.0`.
+pub fn rumble(id: Option<usize>, power: f32) {
+    let mut cx = CONTEXT.with(|cx| cx.borrow_mut().take().expect("HIDs can't be used in multiple places at once"));
+
+    if let Some(id) = id {
+        match cx.pads {
+            Pads::Gameplay(ref mut pads) => {
+                if let Some(Some(ref mut pad)) = pads.get_mut(id) {
+                    pad.rumble(power);
+                }
+            }
+            Pads::Renumbering(ref mut pads) => {
+                if let Some(ref mut pad) = pads.get_mut(id) {
+                    pad.rumble(power);
+                }
+            }
+        }
+    } else {
+        match cx.pads {
+            Pads::Gameplay(ref mut pads) => {
+                for pad in pads.iter_mut() {
+                    if let Some(ref mut pad) = pad {
+                        pad.rumble(power);
+                    }
+                }
+            }
+            Pads::Renumbering(ref mut pads) => {
+                for pad in pads.iter_mut() {
+                    pad.rumble(power);
+                }
+            }
+        }
+    }
+    
+    CONTEXT.with(|new| *new.borrow_mut() = Some(cx));
 }

@@ -44,4 +44,4 @@ mod mode;
 mod input;
 
 pub use mode::Mode;
-pub use input::{TextInput, GameInput, UiInput, Input};
+pub use input::{TextInput, GameInput, UiInput, Input, input, rumble, renumber};
