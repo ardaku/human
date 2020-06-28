@@ -12,8 +12,6 @@ pub enum Input<'a> {
     /// User has interacted with the user interface (usually a GUI, but can be
     /// auditory or other)
     Ui(UiInput),
-    /// User has requested to exit
-    Exit,
 }
 
 /// User interface input; touchscreen, trackpad, mouse, keyboard or gamepad
@@ -100,7 +98,7 @@ pub enum GameInput {
     ComboRightPinky(bool),
 }
 
-/// Typing input Ctrl refers to Cmd on MacOS.
+/// Typing input.  Ctrl refers to Cmd on MacOS.
 #[non_exhaustive]
 #[derive(Copy, Clone, Debug)]
 #[allow(variant_size_differences)]
@@ -276,6 +274,7 @@ pub fn renumber(on: bool) {
 }
 
 /// Get user input from terminal and gamepads
+#[allow(single_use_lifetimes)] // No other way to get rid of warning I think
 pub async fn input<'a>() -> Input<'a> {
     let mut cx = CONTEXT.with(|cx| cx.borrow_mut().take().expect("HIDs can't be used in multiple places at once"));
 
@@ -306,16 +305,8 @@ pub async fn input<'a>() -> Input<'a> {
                     Pads::Renumbering(ref mut pads) => { pads.swap_remove(id); }
                 }
             }
-            (id, Event::Home(true)) => {
-                match cx.pads {
-                    Pads::Gameplay(_) => if id == 0 {
-                        break 'input Input::Exit;
-                    }
-                    Pads::Renumbering(ref mut pads) => {
-                        let pad = pads.swap_remove(id);
-                        pads.push(pad);
-                    }
-                }
+            (_id, Event::Home(_)) => {
+                // Ignore, this is unusable on console systems
             }
             (id, event) => {
                 use Event::*;
