@@ -43,5 +43,5 @@
 mod mode;
 mod input;
 
-pub use mode::Mode;
+pub use mode::{Mode, set_mode, mode_keyboard, mode_pointer, mode_gamepad};
 pub use input::{TextInput, GameInput, UiInput, Input, input, rumble, renumber};

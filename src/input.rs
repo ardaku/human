@@ -1,4 +1,4 @@
-use std::cell::RefCell;
+use std::{sync::Arc, cell::RefCell};
 use pasts::prelude::*;
 use stick::{Event, Hub, Pad};
 
@@ -18,6 +18,8 @@ pub enum Input {
 /// pointer.
 #[derive(Copy, Clone, Debug)]
 pub enum UiInput {
+    /// Back Key / Escape
+    Back,
     /// MouseMove / TouchMove
     MoveX(f64),
     /// MouseMove / TouchMove
@@ -47,18 +49,16 @@ pub enum UiInput {
     Left,
     /// ArrowRight / DpadRight / JoystickRight (2-D Focus selector right)
     Right,
-    /// Back Key / Escape
-    Back,
 }
 
 /// Game input, W3 Standard gamepad with extensions events for PC/Console-style
 /// games.
 #[derive(Copy, Clone, Debug)]
 pub enum GameInput {
+    /// Escape Key or Back Button/Hold Start Button
+    Back,
     /// G Key or Forward Button/Press Start Button
     Menu,
-    /// Escape Key or Back Button/Hold Start Button
-    Pause,
     /// Left Click/Enter Key or A/Circle Button
     A(bool),
     /// Shift Key or B Button
@@ -112,6 +112,8 @@ pub enum GameInput {
 #[derive(Copy, Clone, Debug)]
 #[allow(variant_size_differences)]
 pub enum TextInput {
+    /// Escape key or back button
+    Back,
     /// User has entered some character via keyboard or paste
     Text(char),
     /// Backspace / Shift-Delete (Delete previous character)
@@ -145,8 +147,6 @@ pub enum TextInput {
     SelectLeft,
     /// Shift-ArrowRight (Cursor select right)
     SelectRight,
-    /// Escape key or back button
-    Exit,
     /// Ctrl-C
     Copy,
     /// Alt-C (Ctrl-Shift-C)
@@ -241,10 +241,10 @@ struct Context {
 }
 
 thread_local! {
-    static CONTEXT: RefCell<Option<Box<Context>>> = RefCell::new(Some(Box::new(Context {
+    static CONTEXT: Arc<RefCell<Context>> = Arc::new(RefCell::new(Context {
         hub: Hub::new(),
         pads: Pads::Gameplay(Vec::new()),
-    })));
+    }));
 }
 
 /// Turn gamepad renumbering on or off.
@@ -255,39 +255,39 @@ thread_local! {
 /// controlling.  For single-player games or multiplayer over multiple devices
 /// you don't have to worry about this setting.
 pub fn renumber(on: bool) {
-    let mut cx = CONTEXT.with(|cx| cx.borrow_mut().take().expect("HIDs can't be used in multiple places at once"));
+    let mut cx = CONTEXT.with(|cx| cx.clone());
+    let cx = &mut *cx.borrow_mut();
 
     if on != cx.pads.renumber() {
         // Toggle
-        match cx.pads {
-            Pads::Gameplay(pads) => {
+        match &mut cx.pads {
+            Pads::Gameplay(ref mut pads) => {
                 let mut new = Vec::new();
-                for pad in pads {
+                for pad in pads.drain(..) {
                     if let Some(pad) = pad {
                         new.push(pad);
                     }
                 }
                 cx.pads = Pads::Renumbering(new);
             }
-            Pads::Renumbering(pads) => {
+            Pads::Renumbering(ref mut pads) => {
                 let mut new = Vec::new();
-                for pad in pads {
+                for pad in pads.drain(..) {
                     new.push(Some(pad));
                 }
                 cx.pads = Pads::Gameplay(new);
             }
         }
     }
-    
-    CONTEXT.with(|new| *new.borrow_mut() = Some(cx));
 }
 
 /// Get user input from terminal and gamepads
-#[allow(single_use_lifetimes)] // No other way to get rid of warning I think
 pub async fn input() -> Input {
-    let mut cx = CONTEXT.with(|cx| cx.borrow_mut().take().expect("HIDs can't be used in multiple places at once"));
+    println!("CALL TO INPUT");
+    let cx = CONTEXT.with(|cx| cx.clone());
 
     let input = 'input: loop {
+        let cx = &mut *cx.borrow_mut();
         let mut pads_fut = match cx.pads {
             Pads::Gameplay(ref mut pads) => pads.select(),
             Pads::Renumbering(ref mut pads) => pads.select(),
@@ -321,7 +321,7 @@ pub async fn input() -> Input {
                 use Event::*;
                 use Input::Game;
                 break 'input match event {
-                    Prev(true) => Game(id, GameInput::Pause),
+                    Prev(true) => Game(id, GameInput::Back),
                     Next(true) => Game(id, GameInput::Menu),
                     ActionA(p) => Game(id, GameInput::A(p)),
                     ActionB(p) => Game(id, GameInput::B(p)),
@@ -351,7 +351,6 @@ pub async fn input() -> Input {
         }
     };
     
-    CONTEXT.with(|new| *new.borrow_mut() = Some(cx));
     input
 }
 
@@ -367,7 +366,8 @@ pub async fn input() -> Input {
 /// # Notes
 /// - `power` will automatically be clamped between `0.0` and `1.0`.
 pub fn rumble(id: Option<usize>, power: f32) {
-    let mut cx = CONTEXT.with(|cx| cx.borrow_mut().take().expect("HIDs can't be used in multiple places at once"));
+    let cx = CONTEXT.with(|cx| cx.clone());
+    let cx = &mut *cx.borrow_mut();
 
     if let Some(id) = id {
         match cx.pads {
@@ -398,6 +398,4 @@ pub fn rumble(id: Option<usize>, power: f32) {
             }
         }
     }
-    
-    CONTEXT.with(|new| *new.borrow_mut() = Some(cx));
 }
