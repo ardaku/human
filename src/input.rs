@@ -4,9 +4,9 @@ use stick::{Event, Hub, Pad};
 
 /// Input from any human interface device
 #[derive(Copy, Clone, Debug)]
-pub enum Input<'a> {
+pub enum Input {
     /// User has typed something
-    Text(TextInput<'a>),
+    Text(TextInput),
     /// User has pushed a button on a game controller or emulated
     Game(usize, GameInput),
     /// User has interacted with the user interface (usually a GUI, but can be
@@ -18,28 +18,37 @@ pub enum Input<'a> {
 /// pointer.
 #[derive(Copy, Clone, Debug)]
 pub enum UiInput {
-    /// ScrollWheelY (Vertical scrolling)
-    ScrollV(f32),
-    /// ScrollWheelX / Shift-ScrollWheelY (Horizontal scrolling)
-    ScrollH(f32),
-    /// MouseMove
-    Move(f32, f32),
-    /// LeftClick / Touch / Space Key / Enter Key
-    Push(f32, f32),
-    /// LeftClick / Touch Held + Movement
-    Drag(f32, f32),
+    /// MouseMove / TouchMove
+    MoveX(f64),
+    /// MouseMove / TouchMove
+    MoveY(f64),
+    /// Mouse Leave
+    Leave,
+    /// LeftClick / Touch
+    Press,
+    /// LeftClick Release / Touch Release
+    Release,
+    /// TouchDragX / TrackpadScrollX / ScrollWheelX / Shift-ScrollWheelY
+    /// (Horizontal scrolling)
+    ScrollX(f64),
+    /// TouchDragY / TrackpadScrollY / ScrollWheelY (Vertical scrolling)
+    ScrollY(f64),
+    /// Space Key / Enter Key (focus selector choose)
+    Choose,
     /// Tab/BumperR (1-D focus selector next)
     Next,
-    /// Shift-Tab/BumperL (1-D focus selector previous)
+    /// Shift-Tab / BumperL (1-D focus selector previous)
     Prev,
-    /// ArrowUp/DpadUp/JoystickUp (2-D Focus selector up)
+    /// ArrowUp / DpadUp / JoystickUp (2-D Focus selector up)
     Up,
-    /// ArrowDown/DpadDown/JoystickDown (2-D Focus selector down)
+    /// ArrowDown / DpadDown / JoystickDown (2-D Focus selector down)
     Down,
-    /// ArrowLeft/DpadLeft/JoystickLeft (2-D Focus selector left)
+    /// ArrowLeft / DpadLeft / JoystickLeft (2-D Focus selector left)
     Left,
-    /// ArrowRight/DpadRight/JoystickRight (2-D Focus selector right)
+    /// ArrowRight / DpadRight / JoystickRight (2-D Focus selector right)
     Right,
+    /// Back Key / Escape
+    Back,
 }
 
 /// Game input, W3 Standard gamepad with extensions events for PC/Console-style
@@ -102,9 +111,9 @@ pub enum GameInput {
 #[non_exhaustive]
 #[derive(Copy, Clone, Debug)]
 #[allow(variant_size_differences)]
-pub enum TextInput<'a> {
-    /// User has entered some text via keyboard or paste
-    Text(&'a str),
+pub enum TextInput {
+    /// User has entered some character via keyboard or paste
+    Text(char),
     /// Backspace / Shift-Delete (Delete previous character)
     Backspace,
     /// Delete / Shift-Backspace (Delete next character)
@@ -275,7 +284,7 @@ pub fn renumber(on: bool) {
 
 /// Get user input from terminal and gamepads
 #[allow(single_use_lifetimes)] // No other way to get rid of warning I think
-pub async fn input<'a>() -> Input<'a> {
+pub async fn input() -> Input {
     let mut cx = CONTEXT.with(|cx| cx.borrow_mut().take().expect("HIDs can't be used in multiple places at once"));
 
     let input = 'input: loop {
