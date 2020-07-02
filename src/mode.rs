@@ -7,7 +7,7 @@
 // or http://opensource.org/licenses/Zlib>, at your option. This file may not be
 // copied, modified, or distributed except according to those terms.
 
-use std::sync::atomic::{Ordering, AtomicU8};
+use std::sync::atomic::{AtomicU8, Ordering};
 
 pub(super) static KEYBOARD: AtomicU8 = AtomicU8::new(Mode::Text as u8);
 pub(super) static GAMEPAD: AtomicU8 = AtomicU8::new(Mode::Game as u8);

@@ -1,5 +1,5 @@
-use std::{sync::Arc, cell::RefCell};
 use pasts::prelude::*;
+use std::{cell::RefCell, sync::Arc};
 use stick::{Event, Hub, Pad};
 
 /// Input from any human interface device
@@ -57,7 +57,7 @@ pub enum UiInput {
 pub enum GameInput {
     /// Escape Key or Back Button/Hold Start Button
     Back,
-    /// G Key or Forward Button/Press Start Button
+    /// T Key or Forward Button/Press Start Button
     Menu,
     /// Left Click/Enter Key or A/Circle Button
     A(bool),
@@ -75,13 +75,13 @@ pub enum GameInput {
     Left(bool),
     /// D-Pad or Arrow Key Right or Scroll Up
     Right(bool),
-    /// Ctrl Key or Left Bumper Trigger
+    /// Alt Key or Left Bumper Trigger
     TriggerL(f64),
-    /// Alt Key or Right Bumper Trigger
+    /// Ctrl Key or Right Bumper Trigger
     TriggerR(f64),
-    /// U Key or Left Bumper Button
+    /// G Key / U Key or Left Bumper Button
     BumperL(bool),
-    /// E Key or Right Bumper Button
+    /// E Key / I Key or Right Bumper Button
     BumperR(bool),
     /// Tab Key or Left Joystick Push
     JoyPush(bool),
@@ -255,7 +255,7 @@ thread_local! {
 /// controlling.  For single-player games or multiplayer over multiple devices
 /// you don't have to worry about this setting.
 pub fn renumber(on: bool) {
-    let mut cx = CONTEXT.with(|cx| cx.clone());
+    let cx = CONTEXT.with(|cx| cx.clone());
     let cx = &mut *cx.borrow_mut();
 
     if on != cx.pads.renumber() {
@@ -283,10 +283,9 @@ pub fn renumber(on: bool) {
 
 /// Get user input from terminal and gamepads
 pub async fn input() -> Input {
-    println!("CALL TO INPUT");
     let cx = CONTEXT.with(|cx| cx.clone());
 
-    let input = 'input: loop {
+    'input: loop {
         let cx = &mut *cx.borrow_mut();
         let mut pads_fut = match cx.pads {
             Pads::Gameplay(ref mut pads) => pads.select(),
@@ -294,26 +293,26 @@ pub async fn input() -> Input {
         };
 
         match [cx.hub.fut(), pads_fut.fut()].select().await.1 {
-            (_, Event::Connect(new)) => {
-                match cx.pads {
-                    Pads::Gameplay(ref mut pads) => {
-                        for pad in pads.iter_mut() {
-                            if pad.is_none() {
-                                *pad = Some(*new);
-                                continue 'input;
-                            }
+            (_, Event::Connect(new)) => match cx.pads {
+                Pads::Gameplay(ref mut pads) => {
+                    for pad in pads.iter_mut() {
+                        if pad.is_none() {
+                            *pad = Some(*new);
+                            continue 'input;
                         }
-                        pads.push(Some(*new));
-                    },
-                    Pads::Renumbering(ref mut pads) => pads.push(*new),
+                    }
+                    pads.push(Some(*new));
                 }
-            }
-            (id, Event::Disconnect) => {
-                match cx.pads {
-                    Pads::Gameplay(ref mut pads) => *pads.get_mut(id).unwrap() = None,
-                    Pads::Renumbering(ref mut pads) => { pads.swap_remove(id); }
+                Pads::Renumbering(ref mut pads) => pads.push(*new),
+            },
+            (id, Event::Disconnect) => match cx.pads {
+                Pads::Gameplay(ref mut pads) => {
+                    *pads.get_mut(id).unwrap() = None
                 }
-            }
+                Pads::Renumbering(ref mut pads) => {
+                    pads.swap_remove(id);
+                }
+            },
             (_id, Event::Home(_)) => {
                 // Ignore, this is unusable on console systems
             }
@@ -343,15 +342,17 @@ pub async fn input() -> Input {
                     CamPush(p) => Game(id, GameInput::CamPush(p)),
                     PaddleRight(p) => Game(id, GameInput::ComboRight(p)),
                     PaddleLeft(p) => Game(id, GameInput::ComboLeft(p)),
-                    PaddleRightPinky(p) => Game(id, GameInput::ComboRightPinky(p)),
-                    PaddleLeftPinky(p) => Game(id, GameInput::ComboLeftPinky(p)),
+                    PaddleRightPinky(p) => {
+                        Game(id, GameInput::ComboRightPinky(p))
+                    }
+                    PaddleLeftPinky(p) => {
+                        Game(id, GameInput::ComboLeftPinky(p))
+                    }
                     _ => continue 'input,
-                }
+                };
             }
         }
-    };
-    
-    input
+    }
 }
 
 /// Send rumble effect to a mobile device or gamepad(s).

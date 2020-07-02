@@ -40,8 +40,10 @@
     variant_size_differences
 )]
 
-mod mode;
 mod input;
+mod mode;
 
-pub use mode::{Mode, set_mode, mode_keyboard, mode_pointer, mode_gamepad};
-pub use input::{TextInput, GameInput, UiInput, Input, input, rumble, renumber};
+pub use input::{
+    input, renumber, rumble, GameInput, Input, TextInput, UiInput,
+};
+pub use mode::{mode_gamepad, mode_keyboard, mode_pointer, set_mode, Mode};
