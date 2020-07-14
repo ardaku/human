@@ -39,3 +39,11 @@
     unused_qualifications,
     variant_size_differences
 )]
+
+mod input;
+mod mode;
+
+pub use input::{
+    input, renumber, rumble, GameInput, Input, TextInput, UiInput,
+};
+pub use mode::{mode_gamepad, mode_keyboard, mode_pointer, set_mode, Mode};

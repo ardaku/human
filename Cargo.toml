@@ -25,14 +25,12 @@ edition = "2018"
 
 [dependencies.stick]
 version = "0.10"
-optional = true
-
-[dependencies.window]
-path = "../window"
-optional = true
 
 [dependencies.cala_core]
 version = "0.1"
+
+[dependencies.pasts]
+version = "0.4"
 
 [build-dependencies]
 
