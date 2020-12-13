@@ -77,14 +77,18 @@ impl<T> Future for InputListener<T>
         if let Poll::Ready((_, Controls::Connect(new))) = Pin::new(&mut this.ctlr).poll(cx) {
             return Poll::Ready(Input::Controller(Controller(new)));
         }
-        // FIXME: Check web keyboard input as well.
-        Poll::Pending
+        #[cfg(target_arch = "wasm32")] { crate::web::poll(cx) }
+        #[cfg(not(target_arch = "wasm32"))] { Poll::Pending }
     }
 }
 
 impl Input {
-    /// Get a future that returns input events.
+    /// Get a future that returns input events.  You may only call this once,
+    /// because multiple threads reading the same input wouldn't logically work.
     pub fn listener() -> impl Future<Output = Input> {
+        #[cfg(target_arch = "wasm32")]
+        crate::web::init();
+
         InputListener {
             ctlr: stick::Controller::listener()
         }

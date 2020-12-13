@@ -1,10 +1,10 @@
 //! Since the web (javascript) input isn't connected to creating a window by
 //! talking to a window manager, input can be received here.
 
-use std::{future::Future, task::{Waker, Poll, Context}, pin::Pin};
+use std::{task::{Waker, Poll, Context}};
 
-use web_sys::{EventTarget};
-use wasm_bindgen::Closure;
+use web_sys::{EventTarget, InputEvent, KeyboardEvent, HtmlElement, Attr};
+use wasm_bindgen::{closure::Closure, JsCast};
 
 use crate::{Key, Input};
 
@@ -19,23 +19,19 @@ static mut WEB_INPUT: WebInput = WebInput {
 };
 
 #[allow(unsafe_code)]
-pub fn state<'a>() -> &'a mut WebInput {
+fn state<'a>() -> &'a mut WebInput {
     unsafe {
         &mut WEB_INPUT
     }
 }
 
-impl Future for WebInput {
-    type Output = Input;
-
-    fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
-        let state = state();
-        if let Some(input) = state.input.take() {
-            Poll::Ready(input)
-        } else {
-            state.waker = Some(cx.waker().clone());
-            Poll::Pending
-        }
+pub(crate) fn poll(cx: &mut Context<'_>) -> Poll<Input> {
+    let state = state();
+    if let Some(input) = state.input.take() {
+        Poll::Ready(input)
+    } else {
+        state.waker = Some(cx.waker().clone());
+        Poll::Pending
     }
 }
 
@@ -112,20 +108,19 @@ pub(crate) fn init() {
         left:0;\
         width:0;\
         height:0;\
-    ");
-    localized_input.set_attribute("id", "rust_crate_human__");
+    ").unwrap();
+    localized_input.set_attribute("id", "rust_crate_human__").unwrap();
     let window_node = web_sys::window().unwrap().document().unwrap();
     let localized_input = localized_input.into();
-    window_node.appendChild(&localized_input);
+    window_node.append_child(&localized_input).unwrap();
     let localized_input: EventTarget = localized_input.into();
-    let focus = Closure<dyn Fn()> =
+    let focus: Closure<dyn Fn()> =
         Closure::wrap(Box::new(move || {
-            let localized_input = web_sys::window().unwrap().document().unwrap()
-                .get_element_by_id("rust_crate_human__").unwrap()
-                .into();
+            let localized_input: HtmlElement = web_sys::window().unwrap().document().unwrap()
+                .get_element_by_id("rust_crate_human__").unwrap().dyn_into().unwrap();
             localized_input.focus().unwrap();
         }));
-    let blur = Closure<dyn Fn()> =
+    let blur: Closure<dyn Fn()> =
         Closure::wrap(Box::new(move || {
             web_sys::window().unwrap().set_timeout_with_callback(
                 &focus.as_ref().unchecked_ref()
@@ -134,20 +129,22 @@ pub(crate) fn init() {
     localized_input.add_event_listener_with_callback(
         "blur",
         &blur.as_ref().unchecked_ref()
-    );
+    ).unwrap();
     web_sys::window()
         .unwrap()
         .add_event_listener_with_callback(
             "focus",
             &blur.as_ref().unchecked_ref(),
-        );
+        )
+        .unwrap();
 
-    let input = Closure<dyn Fn(InputEvent)> =
+    let input: Closure<dyn Fn(InputEvent)> =
         Closure::wrap(Box::new(move |event: InputEvent| {
             if !event.is_composing() {
                 let localized_input = web_sys::window().unwrap().document().unwrap()
-                    .get_element_by_id("rust_crate_human__").unwrap()
-                let value = localized_input.value().unwrap();
+                    .get_element_by_id("rust_crate_human__").unwrap();
+                let localized_input: Attr = localized_input.dyn_into().unwrap();
+                let value = localized_input.value();
                 let mut char_iter = value.chars();
                 'a: while let Some(waker) = state().waker.take() {
                     if let Some(c) = char_iter.next() {
@@ -164,7 +161,7 @@ pub(crate) fn init() {
     localized_input.add_event_listener_with_callback(
         "input",
         &input.as_ref().unchecked_ref()
-    );
+    ).unwrap();
 
     #[allow(trivial_casts)] // Actually needed here.
     let key_down: Closure<dyn Fn(KeyboardEvent)> =
@@ -172,7 +169,11 @@ pub(crate) fn init() {
             // If a input is being `.await`ed, wake the waiting thread.
             if let Some(waker) = state().waker.take() {
                 // Set future to complete.
-                state().input = Some(Input::KeyPress(keycode(&event.code())));
+                if let Some(keycode) = keycode(&event.code()) {
+                    state().input = Some(Input::KeyPress(keycode));
+                } else {
+                    state().input = None;
+                }
                 // Wake the microphone future.
                 waker.wake();
             }
@@ -182,7 +183,8 @@ pub(crate) fn init() {
         .add_event_listener_with_callback(
             "keydown",
             key_down.as_ref().unchecked_ref(),
-        );
+        )
+        .unwrap();
 
     #[allow(trivial_casts)] // Actually needed here.
     let key_up: Closure<dyn Fn(KeyboardEvent)> =
@@ -190,7 +192,11 @@ pub(crate) fn init() {
             // If a input is being `.await`ed, wake the waiting thread.
             if let Some(waker) = state().waker.take() {
                 // Set future to complete.
-                state().input = Some(Input::KeyRelease(keycode(&event.code())));
+                if let Some(keycode) = keycode(&event.code()) {
+                    state().input = Some(Input::KeyRelease(keycode));
+                } else {
+                    state().input = None;
+                }
                 // Wake the microphone future.
                 waker.wake();
             }
@@ -200,5 +206,6 @@ pub(crate) fn init() {
         .add_event_listener_with_callback(
             "keyup",
             key_up.as_ref().unchecked_ref(),
-        );
+        )
+        .unwrap();
 }

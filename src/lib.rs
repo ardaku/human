@@ -42,6 +42,8 @@
 
 mod key;
 mod input;
+
+#[cfg(target_arch = "wasm32")]
 mod web;
 
 /// Input event from a controller.
