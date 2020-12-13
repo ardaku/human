@@ -26,6 +26,15 @@ edition = "2018"
 [dependencies.stick]
 version = "0.11"
 
+# For Web Assembly
+[target.'cfg(target_arch = "wasm32")'.dependencies.web-sys]
+version = "0.3"
+features = [
+    "Window",
+]
+[target.'cfg(target_arch = "wasm32")'.dependencies.wasm-bindgen]
+version = "0.2"
+
 [build-dependencies]
 
 [dev-dependencies]

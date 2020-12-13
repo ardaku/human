@@ -23,7 +23,7 @@
     html_favicon_url = "https://raw.githubusercontent.com/libcala/human/master/res/logo.svg",
     html_root_url = "https://docs.rs/human"
 )]
-#![forbid(unsafe_code)]
+#![deny(unsafe_code)]
 #![warn(
     anonymous_parameters,
     missing_copy_implementations,
@@ -42,6 +42,10 @@
 
 mod key;
 mod input;
+mod web;
 
+/// Input event from a controller.
+/// 
+pub use stick::Event as Controls;
 pub use key::Key;
-pub use input::{Input, Controls, Controller};
+pub use input::{Input, Controller};
