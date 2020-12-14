@@ -37,7 +37,8 @@ features = [
     "InputEvent",
     "KeyboardEvent",
     "HtmlElement",
-    "Attr",
+    "HtmlInputElement",
+    "HtmlCollection",
 ]
 [target.'cfg(target_arch = "wasm32")'.dependencies.wasm-bindgen]
 version = "0.2"

@@ -16,8 +16,33 @@ pub fn wasm_start_main() {
     //
     // For more details see
     // https://github.com/rustwasm/console_error_panic_hook#readme
-    #[cfg(feature = "console_error_panic_hook")]
-    console_error_panic_hook::set_once();
+    //#[cfg(feature = "console_error_panic_hook")]
+    //console_error_panic_hook::set_once();
+
+    // Only Print Panics With wasm-pack --dev
+    #[cfg(debug_assertions)]
+    {
+        let hook = std::panic::take_hook();
+        std::panic::set_hook(Box::new(move |panic_info| {
+            use wasm_bindgen::JsValue;
+            use web_sys::console::warn_1 as warn;
+
+            hook(panic_info);
+            if let Some(location) = panic_info.location() {
+                let l = location.line();
+                let f = location.file();
+                let s = if let Some(s) = panic_info.payload().downcast_ref::<&str>() {
+                    s
+                } else if let Some(s) = panic_info.payload().downcast_ref::<String>() {
+                    &s
+                } else {
+                    "Unknown"
+                };
+                warn(&JsValue::from_str(&format!("Panic: {}:{}\n\n{}", f, l, s)));
+            }
+            web_sys::console::trace_0();
+        }));
+    }
 
     // Call the main function.
     main()
