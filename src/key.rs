@@ -193,8 +193,8 @@ pub enum Key {
     AirplaneOn = 0x5B,
     /// Airplane Mode Off (Fn + ])
     AirplaneOff = 0x5C,
-    /// The Lock Key (Fn + Delete)
-    Lock = 0x5D,
+    /// Delete Next (Fn + Delete)
+    Del = 0x5D,
     /// The Caps Lock Key (Fn + Env)
     CapsLk = 0x60,
     /// Enable Both Web Cam and Microphone (Fn + A)
