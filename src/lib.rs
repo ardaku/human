@@ -1,21 +1,55 @@
-// human
+// Human
+// Copyright © 2020-2021 Jeron Aldaron Lau.
 //
-// Copyright (c) 2020 Jeron Aldaron Lau
-//
-// Licensed under the Apache License, Version 2.0, <LICENSE-APACHE or
-// https://apache.org/licenses/LICENSE-2.0>, or the Zlib License, <LICENSE-ZLIB
-// or http://opensource.org/licenses/Zlib>, at your option. This file may not be
-// copied, modified, or distributed except according to those terms.
+// Licensed under any of:
+// - Apache License, Version 2.0 (https://www.apache.org/licenses/LICENSE-2.0)
+// - MIT License (https://mit-license.org/)
+// - Boost Software License, Version 1.0 (https://www.boost.org/LICENSE_1_0.txt)
+// At your choosing (See accompanying files LICENSE_APACHE_2_0.txt,
+// LICENSE_MIT.txt and LICENSE_BOOST_1_0.txt).
 
 //! # Getting Started
 //! Add the following to your `Cargo.toml`:
 //! ```toml
-//! [dependencies.human]
-//! version = "0.1"
+//! [dependencies]
+//! human = "0.2"
+//! pasts = "0.7"
+//! devout = "0.2"
 //! ```
 //!
-//! ```rust
-//! // TODO
+//! ```rust,no_run
+//! use pasts::{exec, wait};
+//! use devout::{log, Tag};
+//! use human::Input;
+//!
+//! const INFO: Tag = Tag::new("Info").show(true);
+//!
+//! /// The program's shared state.
+//! struct State {}
+//!
+//! /// Event handled by the event loop.
+//! enum Event {
+//!     Input(Input),
+//! }
+//!
+//! impl State {
+//!     /// Event loop.
+//!     fn event(&mut self, event: Event) {
+//!         match event {
+//!             Event::Input(input) => log!(INFO, "Input: {:?}", input),
+//!         }
+//!     }
+//! }
+//!
+//! /// Start the async executor.
+//! fn main() {
+//!     let mut state = State {};
+//!     let mut input = human::Input::listener();
+//!
+//!     exec!(state.event(wait! {
+//!         Event::Input((&mut input).await),
+//!     }));
+//! }
 //! ```
 
 #![doc(
@@ -40,14 +74,14 @@
     variant_size_differences
 )]
 
-mod key;
 mod input;
+mod key;
 
 #[cfg(target_arch = "wasm32")]
 mod web;
 
+pub use input::{Controller, Input};
+pub use key::{Key, Mod};
 /// Input event from a controller.
-/// 
+///
 pub use stick::Event as Controls;
-pub use key::Key;
-pub use input::{Input, Controller};

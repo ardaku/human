@@ -1,33 +1,146 @@
-/// Input keycode for a key on a keyboard.
-/// 
-/// The first 64 inputs are represented using numbers 0-63 - they are the
-/// keyboard keys without the function key pressed.  The next 64 inputs are
-/// represented using the numbers 64-127.
+// Human
+// Copyright © 2020-2021 Jeron Aldaron Lau.
+//
+// Licensed under any of:
+// - Apache License, Version 2.0 (https://www.apache.org/licenses/LICENSE-2.0)
+// - MIT License (https://mit-license.org/)
+// - Boost Software License, Version 1.0 (https://www.boost.org/LICENSE_1_0.txt)
+// At your choosing (See accompanying files LICENSE_APACHE_2_0.txt,
+// LICENSE_MIT.txt and LICENSE_BOOST_1_0.txt).
+
+use std::fmt::{Debug, Formatter, Result};
+
+const MOD_SHIFT: u8 = 0b0000_0001;
+const MOD_CTRL: u8 = 0b0000_0010;
+const MOD_ALT: u8 = 0b0000_0100;
+const MOD_FUNC: u8 = 0b0000_1000;
+
+const MOD_CTRL_SHIFT: u8 = MOD_CTRL | MOD_SHIFT;
+const MOD_ALT_SHIFT: u8 = MOD_ALT | MOD_SHIFT;
+const MOD_CTRL_ALT: u8 = MOD_CTRL | MOD_ALT;
+const MOD_CTRL_ALT_SHIFT: u8 = MOD_CTRL_SHIFT | MOD_ALT_SHIFT;
+
+/// Modifier state.
+#[repr(transparent)]
+#[derive(Copy, Clone, Default)]
+pub struct Mod(u8);
+
+impl Mod {
+    /// Check if no modifiers are held down.
+    pub fn none(self) -> bool {
+        self.0 == 0
+    }
+
+    /// Check if SHIFT is held down.
+    pub fn shift(self) -> bool {
+        (self.0 & MOD_SHIFT) == MOD_SHIFT
+    }
+
+    /// Check if CTRL or CMD is held down.
+    ///
+    /// Also triggered with SHIFT+ALT
+    pub fn ctrl(self) -> bool {
+        let is_ctrl = (self.0 & MOD_CTRL_ALT_SHIFT) == MOD_CTRL;
+        let is_shift_alt = (self.0 & MOD_CTRL_ALT_SHIFT) == MOD_ALT_SHIFT;
+
+        is_ctrl || is_shift_alt
+    }
+
+    /// Check if ALT or OPTION is held down.
+    ///
+    /// Also triggered with SHIFT+CTRL
+    pub fn alt(self) -> bool {
+        let is_shift_ctrl = (self.0 & MOD_CTRL_ALT_SHIFT) == MOD_CTRL_SHIFT;
+        let is_alt = (self.0 & MOD_CTRL_ALT_SHIFT) == MOD_ALT;
+
+        is_shift_ctrl || is_alt
+    }
+
+    /// Check if FN is held down.
+    ///
+    /// Also triggered with CTRL+ALT
+    pub fn func(self) -> bool {
+        let is_func = (self.0 & MOD_FUNC) == MOD_FUNC;
+        let is_ctrl_alt = (self.0 & MOD_CTRL_ALT) == MOD_CTRL_ALT;
+
+        is_func || is_ctrl_alt
+    }
+
+    /// No modifiers.
+    pub fn new() -> Self {
+        Mod(0)
+    }
+
+    /// Add shift key.
+    pub fn add_shift(self) -> Self {
+        Self(self.0 | MOD_SHIFT)
+    }
+
+    /// Add control key.
+    pub fn add_ctrl(self) -> Self {
+        Self(self.0 | MOD_CTRL)
+    }
+
+    /// Add alt key.
+    pub fn add_alt(self) -> Self {
+        Self(self.0 | MOD_ALT)
+    }
+
+    /// Add fn key.
+    pub fn add_fn(self) -> Self {
+        Self(self.0 | MOD_FUNC)
+    }
+}
+
+impl Debug for Mod {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
+        if self.ctrl() {
+            write!(f, "Ctrl")?;
+        } else if self.alt() {
+            write!(f, "Alt")?;
+        } else if self.shift() {
+            write!(f, "Shift")?;
+            if self.func() {
+                write!(f, " + Fn")?;
+            }
+        } else if self.func() {
+            write!(f, "Fn")?;
+        } else {
+            write!(f, "None")?;
+        }
+        Ok(())
+    }
+}
+
+/// Input keycode for a key on a keyboard.  Each key is assigned a number from
+/// 0 to 63 (mapped to a minimal 64-key keyboard).
+///
+/// # The 64-Key Keyboard
+/// ![The 64-Key Keyboard Picture](https://github.com/libcala/human/blob/main/res/keyboard.png)
 #[repr(u8)]
 #[derive(Debug, Copy, Clone)]
 pub enum Key {
-    // Start With Basic Keyboard - Without Function Key
     /// Also known as the ESCAPE key.
     Back = 0x00u8,
-    /// Numeric 1 on either top row, or numpad with num-lock enabled
+    /// Numeric 1 on either top row or numpad.
     One = 0x01,
-    /// Numeric 2 on either top row, or numpad with num-lock enabled
+    /// Numeric 2 on either top row or numpad.
     Two = 0x02,
-    /// Numeric 3 on either top row, or numpad with num-lock enabled
+    /// Numeric 3 on either top row or numpad.
     Three = 0x03,
-    /// Numeric 4 on either top row, or numpad with num-lock enabled
+    /// Numeric 4 on either top row or numpad.
     Four = 0x04,
-    /// Numeric 5 on either top row, or numpad with num-lock enabled
+    /// Numeric 5 on either top row or numpad.
     Five = 0x05,
-    /// Numeric 6 on either top row, or numpad with num-lock enabled
+    /// Numeric 6 on either top row or numpad.
     Six = 0x06,
-    /// Numeric 7 on either top row, or numpad with num-lock enabled
+    /// Numeric 7 on either top row or numpad.
     Seven = 0x07,
-    /// Numeric 8 on either top row, or numpad with num-lock enabled
+    /// Numeric 8 on either top row or numpad.
     Eight = 0x08,
-    /// Numeric 9 on either top row, or numpad with num-lock enabled
+    /// Numeric 9 on either top row or numpad.
     Nine = 0x09,
-    /// Numeric 0 on either top row, or numpad with num-lock enabled
+    /// Numeric 0 on either top row or numpad.
     Zero = 0x0A,
     /// Minus / Underscore Key
     Minus = 0x0B,
@@ -35,236 +148,104 @@ pub enum Key {
     Equal = 0x0C,
     /// Backtick / Tilde Key
     Backtick = 0x0D,
-    /// Lang Key (Also Insert Key).
-    Lang = 0x0E,
-    /// Tab / Indent
-    Tab = 0x10,
+    /// Tab
+    Tab = 0x0E,
     /// Q (may be named by a different glyph depending on language of user).
-    Q = 0x11,
+    Q = 0x0F,
     /// W (may be named by a different glyph depending on language of user).
-    W = 0x12,
+    W = 0x10,
     /// E (may be named by a different glyph depending on language of user).
-    E = 0x13,
+    E = 0x11,
     /// R (may be named by a different glyph depending on language of user).
-    R = 0x14,
+    R = 0x12,
     /// T (may be named by a different glyph depending on language of user).
-    T = 0x15,
+    T = 0x13,
     /// Y (may be named by a different glyph depending on language of user).
-    Y = 0x16,
+    Y = 0x14,
     /// U (may be named by a different glyph depending on language of user).
-    U = 0x17,
+    U = 0x15,
     /// I (may be named by a different glyph depending on language of user).
-    I = 0x18,
+    I = 0x16,
     /// U (may be named by a different glyph depending on language of user).
-    O = 0x19,
+    O = 0x17,
     /// I (may be named by a different glyph depending on language of user).
-    P = 0x1A,
+    P = 0x18,
     /// [ (may be named by a different glyph depending on language of user).
-    BracketOpen = 0x1B,
+    BracketOpen = 0x19,
     /// ] (may be named by a different glyph depending on language of user).
-    BracketClose = 0x1C,
+    BracketClose = 0x1A,
     /// Delete (Also Backspace).
-    Delete = 0x1D,
+    Delete = 0x1B,
     /// Env (Also known as: Win, Super, Cmd, Search) Key
-    Env = 0x20,
+    Env = 0x1C,
     /// A (may be named by a different glyph depending on language of user).
-    A = 0x21,
+    A = 0x1D,
     /// S (may be named by a different glyph depending on language of user).
-    S = 0x22,
+    S = 0x1E,
     /// D (may be named by a different glyph depending on language of user).
-    D = 0x23,
+    D = 0x1F,
     /// F (may be named by a different glyph depending on language of user).
-    F = 0x24,
+    F = 0x20,
     /// G (may be named by a different glyph depending on language of user).
-    G = 0x25,
+    G = 0x21,
     /// H (may be named by a different glyph depending on language of user).
-    H = 0x26,
+    H = 0x22,
     /// J (may be named by a different glyph depending on language of user).
-    J = 0x27,
+    J = 0x23,
     /// K (may be named by a different glyph depending on language of user).
-    K = 0x28,
+    K = 0x24,
     /// L (may be named by a different glyph depending on language of user).
-    L = 0x29,
+    L = 0x25,
     /// ; (may be named by a different glyph depending on language of user).
-    Semicolon = 0x2A,
+    Semicolon = 0x26,
     /// ' (may be named by a different glyph depending on language of user).
-    Apostrophe = 0x2B,
+    Apostrophe = 0x27,
     /// Enter (Also Return).
-    Enter = 0x2C,
+    Enter = 0x28,
     /// Left Shift Key
-    LShift = 0x30,
+    LShift = 0x29,
     /// Z (may be named by a different glyph depending on language of user).
-    Z = 0x32,
+    Z = 0x2A,
     /// X (may be named by a different glyph depending on language of user).
-    X = 0x33,
+    X = 0x2B,
     /// C (may be named by a different glyph depending on language of user).
-    C = 0x34,
+    C = 0x2C,
     /// V (may be named by a different glyph depending on language of user).
-    V = 0x35,
+    V = 0x2D,
     /// B (may be named by a different glyph depending on language of user).
-    B = 0x36,
+    B = 0x2E,
     /// N (may be named by a different glyph depending on language of user).
-    N = 0x37,
+    N = 0x2F,
     /// M (may be named by a different glyph depending on language of user).
-    M = 0x38,
+    M = 0x30,
     /// , (may be named by a different glyph depending on language of user).
-    Comma = 0x39,
+    Comma = 0x31,
     /// . (may be named by a different glyph depending on language of user).
-    Period = 0x3A,
+    Period = 0x32,
     /// / (may be named by a different glyph depending on language of user).
-    Slash = 0x3B,
+    Slash = 0x33,
     /// \ (may be named by a different glyph depending on language of user).
-    Backslash = 0x3C,
+    Backslash = 0x34,
     /// Up Arrow
-    Up = 0x3D,
+    Up = 0x35,
     /// Right Shift Key
-    RShift = 0x3E,
-    /// Left Ctrl / Control Key
-    LCtrl = 0x0F,
-    /// Left Alt Key
-    LAlt = 0x1E,
-    /// Space Key (Also Left Thumb Key)
-    Space = 0x1F,
-    /// Right Alt Key
-    RAlt = 0x2D,
-    /// Right Ctrl / Control Key
-    RCtrl = 0x2E,
-    /// Left Arrow
-    Left = 0x2F,
-    /// Down Arrow
-    Down = 0x31,
-    /// Right Arrow
+    RShift = 0x36,
+    /// Left control
+    LCtrl = 0x37,
+    /// Left alt
+    LAlt = 0x38,
+    /// Space (or Left Thumb Button)
+    Space = 0x39,
+    /// Compose Key (Alt Gr, Right Thumb Button, or Lock Key)
+    Compose = 0x3A,
+    /// Right Alt
+    RAlt = 0x3B,
+    /// Right Control
+    RCtrl = 0x3C,
+    /// Left Arrow Key
+    Left = 0x3D,
+    /// Down Arrow Key
+    Down = 0x3E,
+    /// Right Arrow Key
     Right = 0x3F,
-
-    // Next Is Keyboard Extensions - With Function Key
-    /// The menu key (Fn + Back).
-    Menu = 0x40,
-    /// F1 Function Key (Fn + 1)
-    F1 = 0x41,
-    /// F2 Function Key (Fn + 2)
-    F2 = 0x42,
-    /// F3 Function Key (Fn + 3)
-    F3 = 0x43,
-    /// F4 Function Key (Fn + 4)
-    F4 = 0x44,
-    /// F5 Function Key (Fn + 5)
-    F5 = 0x45,
-    /// F6 Function Key (Fn + 6)
-    F6 = 0x46,
-    /// F7 Function Key (Fn + 7)
-    F7 = 0x47,
-    /// F8 Function Key (Fn + 8)
-    F8 = 0x48,
-    /// F9 Function Key (Fn + 9)
-    F9 = 0x49,
-    /// F10 Function Key (Fn + 0)
-    F10 = 0x4A,
-    /// F11 Function Key (Fn + Minus)
-    F11 = 0x4B,
-    /// F12 Function Key (Fn + Equal)
-    F12 = 0x4C,
-    /// Previous Multimedia Key (Fn + Backtick)
-    PrevTrack = 0x4D,
-    /// Next Multimedia Key (Fn + Lang)
-    NextTrack = 0x4E,
-    /// Toggle/Select Display Configuration (Fn + Tab)
-    Display = 0x50,
-    /// Disable All Capture Hardware (Web Cam and Microphone, Fn + Q)
-    Disable = 0x51,
-    /// Enable/Disable Webcam (Fn + W)
-    Cam = 0x52,
-    /// Decrease webcam exposure (Fn + E)
-    DecreaseExposure = 0x53,
-    /// Increase webcam exposure (Fn + R)
-    IncreaseExposure = 0x54,
-    /// Fn + T
-    DecreaseCamSettingA = 0x55,
-    /// Fn + Y
-    IncreaseCamSettingA = 0x56,
-    /// Fn + U
-    DecreaseCamSettingB = 0x57,
-    /// Fn + I
-    IncreaseCamSettingB = 0x58,
-    /// Scroll Lock (Fn + O)
-    ScrollLk = 0x59,
-    /// Airplane Mode (Fn + P)
-    PrintScreen = 0x5A,
-    /// Airplane Mode On (Fn + [)
-    AirplaneOn = 0x5B,
-    /// Airplane Mode Off (Fn + ])
-    AirplaneOff = 0x5C,
-    /// Delete Next (Fn + Delete)
-    Del = 0x5D,
-    /// The Caps Lock Key (Fn + Env)
-    CapsLk = 0x60,
-    /// Enable Both Web Cam and Microphone (Fn + A)
-    Enable = 0x61,
-    /// Louder - Also Volume Up (Fn + S)
-    Louder = 0x62,
-    /// Dim - Also Brightness Down (Fn + D)
-    Dim = 0x63,
-    /// Brighten - Also Brightness Up (Fn + F)
-    Brighten = 0x64,
-    /// The emulation focus key (Fn + F)
-    Focus = 0x65,
-    /// The Terminal Key
-    Terminal = 0x6A,
-    /// The Take Picture App Launcher (with webcam) Key
-    Picture = 0x6B,
-    /// The Calculator Key
-    Calculator = 0x6C,
-    /// The Function Key
-    Fn = 0x70,
-    /// Mute (Fn + Z)
-    Mute = 0x72,
-    /// Quieter - Also Volume Down (Fn + X)
-    Quieter = 0x73,
-    /// Stop (Fn + C)
-    Stop = 0x74,
-    /// Change Microphone (Fn + V)
-    MicSrc = 0x75,
-    /// Change Speaker (Fn + B)
-    SpkSrc = 0x76,
-    /// Change Camera (Fn + N)
-    CamSrc = 0x77,
-    /// Music Player Launcher (Fn + M)
-    Music = 0x78,
-    /// Sound Settings Launcher (Fn + Comma)
-    Sound = 0x79,
-    /// Enable/Disable Internal Screen (Fn + Period)
-    Internet = 0x7A,
-    /// Help Launcher (Fn + Slash)
-    Help = 0x7B,
-    /// Customizable App launcher (Fn + Backslash)
-    Email = 0x7C,
-    /// Up Arrow
-    PgUp = 0x7D,
-    /// The Pause Key
-    Pause = 0x7E,
-    /// Additional Localized Input Key Not Handled by the Lang Key
-    Input = 0x5E,
-    /// Compose Key (Also AltGr, Right Thumb Key)
-    Compose = 0x5F,
-    /// Home Key
-    Home = 0x6F,
-    /// Page Down
-    PgDn = 0x71,
-    /// End Key
-    End = 0x7F,
-
-    // Next Is Mouse Buttons Click
-    /// Extra Mouse Button Click
-    Extra = 0x4F,
-    /// Left Mouse Button Click
-    Click = 0x66,
-    /// Right Mouse Button Click
-    Option = 0x67,
-    /// Scroll Wheel Click
-    Scroll = 0x68,
-    /// DPI Mouse Button Click
-    Dpi = 0x69,
-    /// Prev / Back Mouse Button Click
-    Prev = 0x6D,
-    /// Next / Forward Mouse Buttton Click
-    Next = 0x6E,
 }

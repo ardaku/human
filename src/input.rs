@@ -1,6 +1,20 @@
-use std::{pin::Pin, task::{Context, Poll}, future::Future};
+// Human
+// Copyright © 2020-2021 Jeron Aldaron Lau.
+//
+// Licensed under any of:
+// - Apache License, Version 2.0 (https://www.apache.org/licenses/LICENSE-2.0)
+// - MIT License (https://mit-license.org/)
+// - Boost Software License, Version 1.0 (https://www.boost.org/LICENSE_1_0.txt)
+// At your choosing (See accompanying files LICENSE_APACHE_2_0.txt,
+// LICENSE_MIT.txt and LICENSE_BOOST_1_0.txt).
 
-use crate::{Key, Controls};
+use std::{
+    future::Future,
+    pin::Pin,
+    task::{Context, Poll},
+};
+
+use crate::{Controls, Key, Mod};
 
 /// A gamepad, flightstick, smartphone, or other controller.
 #[derive(Debug)]
@@ -38,9 +52,9 @@ pub enum Input {
     /// User inputted text.
     Text(char),
     /// A key on the keyboard was pressed.
-    KeyPress(Key),
+    KeyPress(Mod, Key),
     /// A key on the keyboard was released.
-    KeyRelease(Key),
+    KeyRelease(Mod, Key),
     /// The pointer was moved in the X dimension (absolute coordinates).
     PointerX(f64),
     /// The pointer was moved in the Y dimension (absolute coordinates).
@@ -64,21 +78,28 @@ pub enum Input {
 }
 
 struct InputListener<T: Future<Output = (usize, Controls)> + Unpin> {
-    ctlr: T
+    ctlr: T,
 }
 
 impl<T> Future for InputListener<T>
-    where T: Future<Output = (usize, Controls)> + Unpin
+where
+    T: Future<Output = (usize, Controls)> + Unpin,
 {
     type Output = Input;
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
         let this = self.get_mut();
-        if let Poll::Ready((_, Controls::Connect(new))) = Pin::new(&mut this.ctlr).poll(cx) {
+        if let Poll::Ready((_, Controls::Connect(new))) =
+            Pin::new(&mut this.ctlr).poll(cx)
+        {
             return Poll::Ready(Input::Controller(Controller(new)));
         }
-        #[cfg(target_arch = "wasm32")] { crate::web::poll(cx) }
-        #[cfg(not(target_arch = "wasm32"))] { Poll::Pending }
+        #[cfg(target_arch = "wasm32")]
+        {            [cfg(target_arch = "wasm32")] {            crate::web::poll(cx)
+        }
+        #[cfg(not(target_arch = "wasm32"))]
+        {            [cfg(not(target_arch = "wasm32"))] {            Poll::Pending
+        }
     }
 }
 
@@ -90,7 +111,7 @@ impl Input {
         crate::web::init();
 
         InputListener {
-            ctlr: stick::Controller::listener()
+            ctlr: stick::Controller::listener(),
         }
     }
 }
