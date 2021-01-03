@@ -53,8 +53,8 @@
 //! ```
 
 #![doc(
-    html_logo_url = "https://raw.githubusercontent.com/libcala/human/master/res/logo.svg",
-    html_favicon_url = "https://raw.githubusercontent.com/libcala/human/master/res/logo.svg",
+    html_logo_url = "https://raw.githubusercontent.com/libcala/human/main/res/icon.svg",
+    html_favicon_url = "https://raw.githubusercontent.com/libcala/human/main/res/icon.svg",
     html_root_url = "https://docs.rs/human"
 )]
 #![deny(unsafe_code)]

@@ -116,7 +116,7 @@ impl Debug for Mod {
 /// 0 to 63 (mapped to a minimal 64-key keyboard).
 ///
 /// # The 64-Key Keyboard
-/// ![The 64-Key Keyboard Picture](https://github.com/libcala/human/blob/main/res/keyboard.png)
+/// ![The 64-Key Keyboard Picture](https://raw.githubusercontent.com/libcala/human/main/res/keyboard.png)
 #[repr(u8)]
 #[derive(Debug, Copy, Clone)]
 pub enum Key {
