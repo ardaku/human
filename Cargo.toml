@@ -1,40 +1,53 @@
-# human
+# Human
+# Copyright © 2020-2021 Jeron Aldaron Lau.
 #
-# Copyright (c) 2020 Jeron Aldaron Lau
-# 
-# Licensed under the Apache License, Version 2.0, <LICENSE-APACHE or
-# https://apache.org/licenses/LICENSE-2.0>, or the Zlib License, <LICENSE-ZLIB
-# or http://opensource.org/licenses/Zlib>, at your option. This file may not be
-# copied, modified, or distributed except according to those terms.
+# Licensed under any of:
+#  - Apache License, Version 2.0 (https://www.apache.org/licenses/LICENSE-2.0)
+#  - MIT License (https://mit-license.org/)
+#  - Boost Software License, Version 1.0 (https://www.boost.org/LICENSE_1_0.txt)
+# At your choosing (See accompanying files LICENSE_APACHE_2_0.txt,
+# LICENSE_MIT.txt and LICENSE_BOOST_1_0.txt).
 
 [package]
 name = "human"
-version = "0.1.0"
+version = "0.2.0"
 authors = ["Jeron Aldaron Lau <jeronlau@plopgrizzly.com>"]
-license = "Apache-2.0 OR Zlib"
-
-description = "Human interface devices"
-repository = "https://github.com/libcala/human"
-documentation = "https://docs.rs/human"
-homepage = "https://github.com/libcala/human/blob/master/CHANGELOG.md"
-include = ["Cargo.toml", "README.md", "LICENSE-ZLIB", "LICENSE-APACHE", "src/*"]
-categories = []
-keywords = []
-readme = "README.md"
 edition = "2018"
+license = "Apache-2.0 OR MIT OR BSL-1.0"
+documentation = "https://docs.rs/human"
+homepage = "https://github.com/libcala/human/blob/main/CHANGELOG.md"
+repository = "https://github.com/libcala/human"
+readme = "README.md"
+description = "Human interface devices"
+keywords = []
+categories = []
+include = ["Cargo.toml", "src/*"]
 
 [dependencies.stick]
-version = "0.10"
+version = "0.11"
 
-[dependencies.cala_core]
-version = "0.1"
-
-[dependencies.pasts]
-version = "0.4"
+# For Web Assembly
+[target.'cfg(target_arch = "wasm32")'.dependencies.web-sys]
+version = "0.3"
+features = [
+    "Window",
+    "Document",
+    "Element",
+    "Node",
+    "InputEvent",
+    "KeyboardEvent",
+    "HtmlElement",
+    "HtmlInputElement",
+    "HtmlCollection",
+]
+[target.'cfg(target_arch = "wasm32")'.dependencies.wasm-bindgen]
+version = "0.2"
 
 [build-dependencies]
 
 [dev-dependencies]
+pasts = "0.7"
+devout = "0.2"
 
 [package.metadata.docs.rs]
 all-features = true

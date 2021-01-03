@@ -1,102 +1,63 @@
-![human logo](https://github.com/libcala/human/blob/master/res/logo.svg)
-#### Human interface devices
-[![crates.io](https://img.shields.io/crates/v/human.svg)](https://crates.io/crates/human)
-[![docs.rs](https://docs.rs/human/badge.svg)](https://docs.rs/human)
-[![tests](https://github.com/libcala/human/workflows/tests/badge.svg)](https://github.com/libcala/human/actions?query=workflow%3Atests)
-[![Percentage of issues still open](http://isitmaintained.com/badge/open/libcala/stick.svg)](http://isitmaintained.com/project/libcala/stick "Percentage of issues still open")
+![Human Logo](https://raw.githubusercontent.com/libcala/human/main/res/icon.svg)
 
-[Getting Started](https://docs.rs/human#getting-started) |
-[Changelog](https://github.com/libcala/human/blob/master/CHANGELOG.md) |
-[Cala Blog](https://libcala.github.io#blog) |
-[GitHub](https://github.com/libcala/human)
+#### [Changelog][3] | [Source][4] | [Getting Started][5]
 
-# Human
-Sometimes input comes from stdin, gamepad API, a window or a web page.
-Wouldn't it be nice if they were all together?
+[![tests](https://github.com/libcala/human/workflows/tests/badge.svg)][2]
+[![docs](https://docs.rs/human/badge.svg)][0]
+[![crates.io](https://img.shields.io/crates/v/human.svg)][1]
 
-## Targets
-Targets that are marked are currently *supported*, the rest are *planned*.
-Targets in **bold** are preferred for that platform.  Targets not listed are
-(mostly) similar to the ones listed, so bug reports and PRs can still be opened
-for them.  This list is based on how
-[cargo-cala](https://github.com/libcala/cargo-cala) builds distribution
-packages, so it may seem a little weird.
+Generic input library.
 
-### Android
- - [ ] APK / AAB (Android App Bundle)
-   - [ ] **aarch64-linux-android** (APK: `/lib/arm64-v8a/`)
-   - [ ] armv7-linux-androideabi, **thumbv7neon-linux-androideabi** (APK:
-     `/lib/armeabi-v7a/`)
-   - [ ] **i686-linux-android** (APK: `/lib/x86/`)
-   - [ ] **x86_64-linux-android** (APK: `/lib/x86_64/`)
+Check out the [documentation][0] for examples.
 
-### BSD Variants
- - [ ] **i686-unknown-freebsd** (32-bit FreeBSD App)
- - [ ] **x86_64-unknown-freebsd** (64-bit FreeBSD App)
- - [ ] **x86_64-unknown-netbsd** (64-bit NetBSD App)
+### Features
+ - Keyboard, Mouse and Controller Events
+ - Web Keyboard Events
+ - Linux Controller Events
 
-### Fuchsia
- - [ ] **aarch64-fuchsia** (Fuchsia for ARM App)
- - [ ] **x86_64-fuchsia** (Fuchsia for X86 App)
-
-### iOS
- - [ ] iOS App
-   - [ ] **aarch64-apple-ios**
-   - [ ] **x86_64-apple-ios**
-
-### Linux Variants
- - [ ] Flatpak
-   - [ ] **x86_64-unknown-linux-gnu** (arch: /x86_64/)
-   - [ ] **i586-unknown-linux-gnu** (arch: /i386/)
-   - [ ] **aarch64-unknown-linux-gnu** (arch: /aarch64/, Raspberry Pi 4)
-   - [ ] armv7-unknown-linux-gnueabihf, **thumbv7neon-unknown-linux-gnueabihf**
-     (arch: /arm/, Raspberry Pi 2-3)
- - [ ] **arm-unknown-linux-gnueabihf** (Raspberry Pi Zero W Program)
- - [ ] **riscv64gc-unknown-linux-gnu** (Risc-V Linux Program)
-
-### MacOS
- - [ ] **x86_64-apple-darwin** (MacOS App)
-
-### Redox
- - [ ] **x86_64-unknown-redox** (Redox App)
-
-### Web
- - [ ] Static Web App
-   - [ ] wasm32-unknown-emscripten, **wasm32-unknown-unknown**
-   - [ ] **asmjs-unknown-emscripten** (fallback)
- - [ ] **wasm32-wasi** (WASI App)
-
-### Windows
- - [ ] i586-pc-windows-msvc, i686-pc-windows-msvc, **i686-pc-windows-gnu**
-   (32-bit Windows App),
- - [ ] **x86_64-pc-windows-gnu**, x86\_64-pc-windows-msvc (64-bit Windows App)
+### Supported Platforms
+Human targets all platforms that can run Rust, including:
+ - Linux
+ - Web Assembly
+ - Windows **not all features work yet**
+ - Mac OS **not all features work yet**
+ - BSD **not all features work yet**
+ - Android (may partially or fully work, but untested) **not all features work yet**
+ - iOS / various game consoles **not all features work yet**
+ - Redox **not all features work yet**
+ - Fuchsia **not all features work yet**
+ - Others? (make a PR)
 
 ## License
-Licensed under either of
- - Apache License, Version 2.0,
-   ([LICENSE-APACHE](https://github.com/libcala/human/blob/master/LICENSE-APACHE) or
-   [https://www.apache.org/licenses/LICENSE-2.0](https://www.apache.org/licenses/LICENSE-2.0))
- - Zlib License,
-   ([LICENSE-ZLIB](https://github.com/libcala/human/blob/master/LICENSE-ZLIB) or
-   [https://opensource.org/licenses/Zlib](https://opensource.org/licenses/Zlib))
+Licensed under any of
+ - Apache License, Version 2.0, ([LICENSE_APACHE_2_0.txt][7]
+   or [https://www.apache.org/licenses/LICENSE-2.0][8])
+ - MIT License, ([LICENSE_MIT.txt][9] or [https://mit-license.org/][10])
+ - Boost Software License, Version 1.0, ([LICENSE_BOOST_1_0.txt][11]
+   or [https://www.boost.org/LICENSE_1_0.txt][12])
 
 at your option.
 
 ### Contribution
 Unless you explicitly state otherwise, any contribution intentionally submitted
 for inclusion in the work by you, as defined in the Apache-2.0 license, shall be
-dual licensed as above, without any additional terms or conditions.
+licensed as described above, without any additional terms or conditions.
 
-Contributors are always welcome (thank you for being interested!), whether it
-be a bug report, bug fix, feature request, feature implementation or whatever.
-Don't be shy about getting involved.  I always make time to fix bugs, so usually
-a patched version of the library will be out a few days after a report.
-Features requests will not complete as fast.  If you have any questions, design
-critques, or want me to find you something to work on based on your skill level,
-you can email me at [jeronlau@plopgrizzly.com](mailto:jeronlau@plopgrizzly.com).
-Otherwise,
-[here's a link to the issues on GitHub](https://github.com/libcala/human/issues).
-Before contributing, check out the
-[contribution guidelines](https://github.com/libcala/human/blob/master/CONTRIBUTING.md),
-and, as always, make sure to follow the
-[code of conduct](https://github.com/libcala/human/blob/master/CODE_OF_CONDUCT.md).
+## Help
+If you want help using or contributing to this library, feel free to send me an
+email at [aldaronlau@gmail.com][13].
+
+[0]: https://docs.rs/human
+[1]: https://crates.io/crates/human
+[2]: https://github.com/libcala/human/actions?query=workflow%3Atests
+[3]: https://github.com/libcala/human/blob/main/CHANGELOG.md
+[4]: https://github.com/libcala/human/
+[5]: https://docs.rs/human#getting-started
+[6]: https://aldaronlau.com/
+[7]: https://github.com/libcala/human/blob/main/LICENSE_APACHE_2_0.txt
+[8]: https://www.apache.org/licenses/LICENSE-2.0
+[9]: https://github.com/libcala/human/blob/main/LICENSE_MIT.txt
+[10]: https://mit-license.org/
+[11]: https://github.com/libcala/human/blob/main/LICENSE_BOOST_1_0.txt
+[12]: https://www.boost.org/LICENSE_1_0.txt
+[13]: mailto:aldaronlau@gmail.com
