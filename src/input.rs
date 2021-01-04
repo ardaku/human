@@ -51,10 +51,19 @@ impl Future for Controller {
 pub enum Input {
     /// User inputted text.
     Text(char),
-    /// A key on the keyboard was pressed.
-    KeyPress(Mod, Key),
-    /// A key on the keyboard was released.
-    KeyRelease(Mod, Key),
+    /// A key on the keyboard was pressed or released.
+    Key(Mod, Key, bool),
+    /// Pointer button was pressed or released (Left click, Tap).
+    Pointer(bool),
+    /// Context button was pressed or released (Right click, Ctrl-Click, Menu
+    /// Button, or Long Tap - note that long touch will still send `Pointer`
+    /// event).
+    Context(bool),
+    /// Central button was pressed or released (Middle click, Alt-Click,
+    /// Two-Finger Tap).
+    Central(bool),
+    /// Selection Area (Shift + Click only).
+    SelArea(bool),
     /// The pointer was moved in the X dimension (absolute coordinates).
     PointerX(f64),
     /// The pointer was moved in the Y dimension (absolute coordinates).
@@ -65,14 +74,12 @@ pub enum Input {
     ScrollX(f64),
     /// Request to shift the viewport in the Y dimension (relative coordinates).
     ScrollY(f64),
-    /// 2-Finger Pinch Starting Width Changed.
-    PinchW(f64),
-    /// 2-Finger Pinch Starting Height Changed.
-    PinchH(f64),
-    /// 2-Finger Pinch Width Change.
-    ScaleW(f64),
-    /// 2-Finger Pinch Height Change.
-    ScaleH(f64),
+    /// Request to zoom the viewport (2-Finger Pinch, or Ctrl-Scroll).  Units
+    /// are relative to previous zoom level.
+    Zoom(f64),
+    /// Request to rotate the viewport (2-Finger Twist, or Alt-Scroll).  Units
+    /// are in rotations.
+    Rotate(f64),
     /// New controller plugged in.
     Controller(Controller),
 }
@@ -94,8 +101,12 @@ where
         {
             return Poll::Ready(Input::Controller(Controller(new)));
         }
-        #[cfg(target_arch = "wasm32")] { crate::web::poll(cx) }
-        #[cfg(not(target_arch = "wasm32"))] { Poll::Pending }
+        #[cfg(target_arch = "wasm32")]
+        {            [cfg(target_arch = "wasm32")] {            crate::web::poll(cx)
+        }
+        #[cfg(not(target_arch = "wasm32"))]
+        {            [cfg(not(target_arch = "wasm32"))] {            Poll::Pending
+        }
     }
 }
 

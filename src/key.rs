@@ -26,6 +26,12 @@ const MOD_CTRL_ALT_SHIFT: u8 = MOD_CTRL_SHIFT | MOD_ALT_SHIFT;
 pub struct Mod(u8);
 
 impl Mod {
+    /// Check if any combination of modifiers are held or not (minus the
+    /// function key).
+    pub fn any(self) -> bool {
+        !self.func()
+    }
+
     /// Check if no modifiers are held down.
     pub fn none(self) -> bool {
         self.0 == 0

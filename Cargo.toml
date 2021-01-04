@@ -36,9 +36,12 @@ features = [
     "Node",
     "InputEvent",
     "KeyboardEvent",
+    "MouseEvent",
+    "WheelEvent",
     "HtmlElement",
     "HtmlInputElement",
     "HtmlCollection",
+    "AddEventListenerOptions",
 ]
 [target.'cfg(target_arch = "wasm32")'.dependencies.wasm-bindgen]
 version = "0.2"
