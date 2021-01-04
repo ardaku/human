@@ -13,7 +13,6 @@ use std::fmt::{Debug, Formatter, Result};
 const MOD_SHIFT: u8 = 0b0000_0001;
 const MOD_CTRL: u8 = 0b0000_0010;
 const MOD_ALT: u8 = 0b0000_0100;
-const MOD_FUNC: u8 = 0b0000_1000;
 
 const MOD_CTRL_SHIFT: u8 = MOD_CTRL | MOD_SHIFT;
 const MOD_ALT_SHIFT: u8 = MOD_ALT | MOD_SHIFT;
@@ -62,14 +61,11 @@ impl Mod {
         is_shift_ctrl || is_alt
     }
 
-    /// Check if FN is held down.
-    ///
-    /// Also triggered with CTRL+ALT
+    /// Check if CTRL+ALT is held down.
     pub fn func(self) -> bool {
-        let is_func = (self.0 & MOD_FUNC) == MOD_FUNC;
         let is_ctrl_alt = (self.0 & MOD_CTRL_ALT) == MOD_CTRL_ALT;
 
-        is_func || is_ctrl_alt
+        is_ctrl_alt
     }
 
     /// No modifiers.
@@ -90,11 +86,6 @@ impl Mod {
     /// Add alt key.
     pub fn add_alt(self) -> Self {
         Self(self.0 | MOD_ALT)
-    }
-
-    /// Add fn key.
-    pub fn add_fn(self) -> Self {
-        Self(self.0 | MOD_FUNC)
     }
 }
 
@@ -118,11 +109,7 @@ impl Debug for Mod {
     }
 }
 
-/// Input keycode for a key on a keyboard.  Each key is assigned a number from
-/// 0 to 63 (mapped to a minimal 64-key keyboard).
-///
-/// # The 64-Key Keyboard
-/// ![The 64-Key Keyboard Picture](https://raw.githubusercontent.com/libcala/human/main/res/keyboard.png)
+/// Input keycode for a key on a keyboard.
 #[repr(u8)]
 #[derive(Debug, Copy, Clone)]
 pub enum Key {
@@ -180,8 +167,8 @@ pub enum Key {
     BracketOpen = 0x19,
     /// ] (may be named by a different glyph depending on language of user).
     BracketClose = 0x1A,
-    /// Delete (Also Backspace).
-    Delete = 0x1B,
+    /// Backspace.
+    Backspace = 0x1B,
     /// Env (Also known as: Win, Super, Cmd, Search) Key
     Env = 0x1C,
     /// A (may be named by a different glyph depending on language of user).
@@ -242,7 +229,7 @@ pub enum Key {
     LAlt = 0x38,
     /// Space (or Left Thumb Button)
     Space = 0x39,
-    /// Compose Key (Alt Gr, Right Thumb Button, or Lock Key)
+    /// Compose Key (Alt Gr, Right Thumb Button, NumLock, ScrLk Key)
     Compose = 0x3A,
     /// Right Alt
     RAlt = 0x3B,
@@ -254,4 +241,90 @@ pub enum Key {
     Down = 0x3E,
     /// Right Arrow Key
     Right = 0x3F,
+    
+    // Back = 0x40u8,
+    /// F1 Key
+    F1 = 0x41,
+    /// F2 Key
+    F2 = 0x42,
+    /// F3 Key
+    F3 = 0x43,
+    /// F4 Key
+    F4 = 0x44,
+    /// F5 Key
+    F5 = 0x45,
+    /// F6 Key
+    F6 = 0x46,
+    /// F7 Key
+    F7 = 0x47,
+    /// F8 Key
+    F8 = 0x48,
+    /// F9 Key
+    F9 = 0x49,
+    /// F10 Key
+    F10 = 0x4A,
+    /// F11 Key
+    F11 = 0x4B,
+    /// F12 Key
+    F12 = 0x4C,
+    /// Insert Key
+    Insert = 0x4D,
+    // Tab = 0x4E,
+    // Q = 0x4F,
+    // W = 0x50,
+    // E = 0x51,
+    // R = 0x52,
+    // T = 0x53,
+    // Y = 0x54,
+    // U = 0x55,
+    // I = 0x56,
+    // O = 0x57,
+    // P = 0x58,
+    // BracketOpen = 0x19,
+    // BracketClose = 0x1A,
+    /// The delete key
+    Delete = 0x5B,
+    /// The Caps Lock Key
+    CapsLock = 0x5C,
+    // A = 0x1D,
+    // S = 0x1E,
+    // D = 0x1F,
+    // F = 0x20,
+    // G = 0x21,
+    // H = 0x22,
+    // J = 0x23,
+    // K = 0x24,
+    // L = 0x25,
+    // Semicolon = 0x26,
+    // Apostrophe = 0x27,
+    // NumpadEnter = 0x28,
+    // LShift = 0x29,
+    // Z = 0x2A,
+    // X = 0x2B,
+    // C = 0x2C,
+    // V = 0x2D,
+    // B = 0x2E,
+    // N = 0x2F,
+    // M = 0x30,
+    // Comma = 0x31,
+    // Period = 0x32,
+    // Slash = 0x33,
+    // Backslash = 0x34,
+    /// Page Up
+    PageUp = 0x75,
+    // RShift = 0x36,
+    // LCtrl = 0x37,
+    // LAlt = 0x38,
+    /// Pause Key
+    Pause = 0x79,
+    // Compose = 0x3A,
+    // RAlt = 0x3B,
+    /// Context Menu
+    Menu = 0x7C,
+    /// Home
+    Home = 0x7D,
+    /// Page Down
+    PageDown = 0x7E,
+    /// End
+    End = 0x7F,
 }

@@ -35,21 +35,38 @@ static mut WEB_INPUT: WebInput = WebInput {
 };
 
 static KEYBOARD_STATE: AtomicU64 = AtomicU64::new(0);
+static KEYBOARD_STATE_FN: AtomicU64 = AtomicU64::new(0);
 
 fn key_up_state(key: Key) -> bool {
-    let bitflag = 1 << (key as i8);
-    let new = KEYBOARD_STATE.fetch_and(!bitflag, SeqCst);
-    let old = KEYBOARD_STATE.load(SeqCst);
+    if key as i8 >= 64 {
+        let bitflag = 1 << (key as i8 - 64);
+        let new = KEYBOARD_STATE_FN.fetch_and(!bitflag, SeqCst);
+        let old = KEYBOARD_STATE_FN.load(SeqCst);
 
-    old != new
+        old != new
+    } else {
+        let bitflag = 1 << (key as i8);
+        let new = KEYBOARD_STATE.fetch_and(!bitflag, SeqCst);
+        let old = KEYBOARD_STATE.load(SeqCst);
+
+        old != new
+    }
 }
 
 fn key_down_state(key: Key) -> bool {
-    let bitflag = 1 << (key as i8);
-    let new = KEYBOARD_STATE.fetch_or(bitflag, SeqCst);
-    let old = KEYBOARD_STATE.load(SeqCst);
+    if key as i8 >= 64 {
+        let bitflag = 1 << (key as i8 - 64);
+        let new = KEYBOARD_STATE_FN.fetch_or(bitflag, SeqCst);
+        let old = KEYBOARD_STATE_FN.load(SeqCst);
 
-    old != new
+        old != new
+    } else {
+        let bitflag = 1 << (key as i8);
+        let new = KEYBOARD_STATE.fetch_or(bitflag, SeqCst);
+        let old = KEYBOARD_STATE.load(SeqCst);
+
+        old != new
+    }
 }
 
 #[allow(unsafe_code)]
@@ -145,6 +162,7 @@ fn keycode(keycode: &str) -> Option<(Key, Mod)> {
         "Digit7" | "Numpad7" => (Key::Seven, Mod::new()),
         "Digit8" | "Numpad8" => (Key::Eight, Mod::new()),
         "Digit9" | "Numpad9" => (Key::Nine, Mod::new()),
+        "Enter" | "NumpadEnter" => (Key::Enter, Mod::new()),
         "KeyA" => (Key::A, Mod::new()),
         "KeyB" => (Key::B, Mod::new()),
         "KeyC" => (Key::C, Mod::new()),
@@ -177,18 +195,16 @@ fn keycode(keycode: &str) -> Option<(Key, Mod)> {
         "ArrowRight" => (Key::Right, Mod::new()),
         "Space" => (Key::Space, Mod::new()),
         "Tab" => (Key::Tab, Mod::new()),
-        "Backspace" => (Key::Delete, Mod::new()),
-        "Delete" => (Key::Delete, Mod::new().add_fn()),
+        "Backspace" => (Key::Backspace, Mod::new()),
+        "Delete" => (Key::Delete, Mod::new()),
         "Escape" => (Key::Back, Mod::new()),
-        "Enter" => (Key::Enter, Mod::new()),
-        "NumpadEnter" => (Key::Enter, Mod::new().add_fn()),
         "Minus" => (Key::Minus, Mod::new()),
         "Equal" => (Key::Equal, Mod::new()),
-        "Insert" => (Key::Backtick, Mod::new().add_fn()),
-        "PageUp" => (Key::Up, Mod::new().add_fn()),
-        "PageDown" => (Key::Down, Mod::new().add_fn()),
-        "Home" => (Key::Left, Mod::new().add_fn()),
-        "End" => (Key::Right, Mod::new().add_fn()),
+        "Insert" => (Key::Insert, Mod::new()),
+        "PageUp" => (Key::PageUp, Mod::new()),
+        "PageDown" => (Key::PageDown, Mod::new()),
+        "Home" => (Key::Home, Mod::new()),
+        "End" => (Key::End, Mod::new()),
         "Backslash" => (Key::Backslash, Mod::new()),
         "BracketLeft" => (Key::BracketOpen, Mod::new()),
         "BracketRight" => (Key::BracketClose, Mod::new()),
@@ -197,32 +213,33 @@ fn keycode(keycode: &str) -> Option<(Key, Mod)> {
         "Slash" => (Key::Slash, Mod::new()),
         "Period" | "NumpadDecimal" => (Key::Period, Mod::new()),
         "Comma" => (Key::Comma, Mod::new()),
-        "Pause" => (Key::Space, Mod::new().add_fn()),
-        "ContextMenu" => (Key::LCtrl, Mod::new().add_fn()),
+        "Pause" => (Key::Pause, Mod::new()),
+        "ContextMenu" => (Key::Menu, Mod::new()),
         "Backquote" => (Key::Backtick, Mod::new()),
-        "F1" => (Key::One, Mod::new().add_fn()),
-        "F2" => (Key::Two, Mod::new().add_fn()),
-        "F3" => (Key::Three, Mod::new().add_fn()),
-        "F4" => (Key::Four, Mod::new().add_fn()),
-        "F5" => (Key::Five, Mod::new().add_fn()),
-        "F6" => (Key::Six, Mod::new().add_fn()),
-        "F7" => (Key::Seven, Mod::new().add_fn()),
-        "F8" => (Key::Eight, Mod::new().add_fn()),
-        "F9" => (Key::Nine, Mod::new().add_fn()),
-        "F10" => (Key::Zero, Mod::new().add_fn()),
-        "F11" => (Key::Minus, Mod::new().add_fn()),
-        "F12" => (Key::Equal, Mod::new().add_fn()),
+        "F1" => (Key::F1, Mod::new()),
+        "F2" => (Key::F2, Mod::new()),
+        "F3" => (Key::F3, Mod::new()),
+        "F4" => (Key::F4, Mod::new()),
+        "F5" => (Key::F5, Mod::new()),
+        "F6" => (Key::F6, Mod::new()),
+        "F7" => (Key::F7, Mod::new()),
+        "F8" => (Key::F8, Mod::new()),
+        "F9" => (Key::F9, Mod::new()),
+        "F10" => (Key::F10, Mod::new()),
+        "F11" => (Key::F11, Mod::new()),
+        "F12" => (Key::F12, Mod::new()),
         "NumpadDivide" => (Key::Slash, Mod::new()),
         "NumpadMultiply" => (Key::Eight, Mod::new().add_shift()),
         "NumpadSubtract" => (Key::Minus, Mod::new()),
         "NumpadAdd" => (Key::Equal, Mod::new().add_shift()),
         "NumLock" => (Key::Compose, Mod::new()),
-        "CapsLock" => (Key::Compose, Mod::new()),
+        "CapsLock" => (Key::CapsLock, Mod::new()),
         "ScrollLock" => (Key::Compose, Mod::new()),
         "ShiftLeft" => (Key::LShift, Mod::new()),
         "ShiftRight" => (Key::RShift, Mod::new()),
-        "ControlLeft" | "MetaLeft" | "OSLeft" => (Key::LCtrl, Mod::new()),
-        "ControlRight" | "MetaRight" | "OSRight" => (Key::RCtrl, Mod::new()),
+        "ControlLeft" | "MetaLeft" => (Key::LCtrl, Mod::new()),
+        "ControlRight" | "MetaRight" => (Key::RCtrl, Mod::new()),
+        "OSLeft" | "OSRight" => (Key::Env, Mod::new()),
         "AltLeft" => (Key::LAlt, Mod::new()),
         "AltRight" => (Key::RAlt, Mod::new()),
         _ => return None,
