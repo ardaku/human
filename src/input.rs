@@ -101,11 +101,15 @@ where
         {
             return Poll::Ready(Input::Controller(Controller(new)));
         }
+
         #[cfg(target_arch = "wasm32")]
-        {            [cfg(target_arch = "wasm32")] {            crate::web::poll(cx)
+        {
+            crate::web::poll(cx)
         }
+
         #[cfg(not(target_arch = "wasm32"))]
-        {            [cfg(not(target_arch = "wasm32"))] {            Poll::Pending
+        {
+            Poll::Pending
         }
     }
 }
