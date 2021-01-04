@@ -21,41 +21,49 @@ pub struct Mod(u8);
 
 impl Mod {
     /// Check if no modifiers are held down.
+    #[inline(always)]
     pub fn none(self) -> bool {
         self.0 == 0
     }
 
     /// Check if SHIFT is held down.
+    #[inline(always)]
     pub fn shift(self) -> bool {
-        (self.0 & MOD_SHIFT) == MOD_SHIFT
+        (self.0 & MOD_SHIFT) != 0
     }
 
     /// Check if CTRL or CMD is held down.
+    #[inline(always)]
     pub fn ctrl(self) -> bool {
-        (self.0 & MOD_CTRL) == MOD_CTRL
+        (self.0 & MOD_CTRL) != 0
     }
 
     /// Check if ALT or OPTION is held down.
+    #[inline(always)]
     pub fn alt(self) -> bool {
-        (self.0 & MOD_ALT) == MOD_ALT
+        (self.0 & MOD_ALT) != 0
     }
 
     /// No modifiers.
+    #[inline(always)]
     pub fn new() -> Self {
         Mod(0)
     }
 
     /// Add shift key.
+    #[inline(always)]
     pub fn add_shift(self) -> Self {
         Self(self.0 | MOD_SHIFT)
     }
 
     /// Add control key.
+    #[inline(always)]
     pub fn add_ctrl(self) -> Self {
         Self(self.0 | MOD_CTRL)
     }
 
     /// Add alt key.
+    #[inline(always)]
     pub fn add_alt(self) -> Self {
         Self(self.0 | MOD_ALT)
     }
