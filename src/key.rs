@@ -90,6 +90,7 @@ impl Debug for Mod {
 /// Input keycode for a key on a keyboard.
 #[repr(u8)]
 #[derive(Debug, Copy, Clone)]
+#[non_exhaustive]
 pub enum Key {
     /// Also known as the ESCAPE key.
     Back = 0x00u8,

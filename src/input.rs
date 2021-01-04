@@ -48,6 +48,7 @@ impl Future for Controller {
 
 /// Input event from any human interface device
 #[derive(Debug)]
+#[non_exhaustive]
 pub enum Input {
     /// User inputted text.
     Text(char),

@@ -11,6 +11,7 @@
 /// Input keycode for a button on a mouse.
 #[repr(u8)]
 #[derive(Debug, Copy, Clone)]
+#[non_exhaustive]
 pub enum Btn {
     /// Left or Primary click
     Left = 0x00u8,
