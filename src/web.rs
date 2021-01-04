@@ -18,10 +18,11 @@ use std::{
 
 use wasm_bindgen::{closure::Closure, JsCast};
 use web_sys::{
-    EventTarget, HtmlElement, HtmlInputElement, InputEvent, KeyboardEvent,
+    AddEventListenerOptions, Event, EventTarget, HtmlElement, HtmlInputElement,
+    InputEvent, KeyboardEvent, MouseEvent, WheelEvent,
 };
 
-use crate::{Input, Key, Mod};
+use crate::{Input, Key, Mod, Btn};
 
 struct WebInput {
     input: Option<Input>,
@@ -34,21 +35,38 @@ static mut WEB_INPUT: WebInput = WebInput {
 };
 
 static KEYBOARD_STATE: AtomicU64 = AtomicU64::new(0);
+static KEYBOARD_STATE_FN: AtomicU64 = AtomicU64::new(0);
 
 fn key_up_state(key: Key) -> bool {
-    let bitflag = 1 << (key as i8);
-    let new = KEYBOARD_STATE.fetch_and(!bitflag, SeqCst);
-    let old = KEYBOARD_STATE.load(SeqCst);
+    if key as i8 >= 64 {
+        let bitflag = 1 << (key as i8 - 64);
+        let new = KEYBOARD_STATE_FN.fetch_and(!bitflag, SeqCst);
+        let old = KEYBOARD_STATE_FN.load(SeqCst);
 
-    old != new
+        old != new
+    } else {
+        let bitflag = 1 << (key as i8);
+        let new = KEYBOARD_STATE.fetch_and(!bitflag, SeqCst);
+        let old = KEYBOARD_STATE.load(SeqCst);
+
+        old != new
+    }
 }
 
 fn key_down_state(key: Key) -> bool {
-    let bitflag = 1 << (key as i8);
-    let new = KEYBOARD_STATE.fetch_or(bitflag, SeqCst);
-    let old = KEYBOARD_STATE.load(SeqCst);
+    if key as i8 >= 64 {
+        let bitflag = 1 << (key as i8 - 64);
+        let new = KEYBOARD_STATE_FN.fetch_or(bitflag, SeqCst);
+        let old = KEYBOARD_STATE_FN.load(SeqCst);
 
-    old != new
+        old != new
+    } else {
+        let bitflag = 1 << (key as i8);
+        let new = KEYBOARD_STATE.fetch_or(bitflag, SeqCst);
+        let old = KEYBOARD_STATE.load(SeqCst);
+
+        old != new
+    }
 }
 
 #[allow(unsafe_code)]
@@ -87,7 +105,30 @@ fn is_printing(keycode: &str) -> bool {
         )
 }
 
-fn sys_modifier(event: &KeyboardEvent, mods: &mut Mod) -> bool {
+fn ptr_modifier(event: &MouseEvent) -> Mod {
+    let mut mods = Mod::new();
+
+    let ctrl =
+        event.get_modifier_state("Control") || event.get_modifier_state("Meta");
+    let alt = event.get_modifier_state("Alt");
+    let shift = event.get_modifier_state("Shift");
+
+    if ctrl {
+        mods = mods.add_ctrl();
+    }
+
+    if alt {
+        mods = mods.add_alt();
+    }
+
+    if shift {
+        mods = mods.add_shift();
+    }
+
+    mods
+}
+
+fn key_modifier(event: &KeyboardEvent, mods: &mut Mod) -> bool {
     let ctrl =
         event.get_modifier_state("Control") || event.get_modifier_state("Meta");
     let alt = event.get_modifier_state("Alt");
@@ -121,6 +162,7 @@ fn keycode(keycode: &str) -> Option<(Key, Mod)> {
         "Digit7" | "Numpad7" => (Key::Seven, Mod::new()),
         "Digit8" | "Numpad8" => (Key::Eight, Mod::new()),
         "Digit9" | "Numpad9" => (Key::Nine, Mod::new()),
+        "Enter" | "NumpadEnter" => (Key::Enter, Mod::new()),
         "KeyA" => (Key::A, Mod::new()),
         "KeyB" => (Key::B, Mod::new()),
         "KeyC" => (Key::C, Mod::new()),
@@ -153,17 +195,16 @@ fn keycode(keycode: &str) -> Option<(Key, Mod)> {
         "ArrowRight" => (Key::Right, Mod::new()),
         "Space" => (Key::Space, Mod::new()),
         "Tab" => (Key::Tab, Mod::new()),
-        "Backspace" => (Key::Delete, Mod::new()),
-        "Delete" => (Key::Delete, Mod::new().add_fn()),
+        "Backspace" => (Key::Backspace, Mod::new()),
+        "Delete" => (Key::Delete, Mod::new()),
         "Escape" => (Key::Back, Mod::new()),
-        "NumpadEnter" | "Enter" => (Key::Enter, Mod::new()),
         "Minus" => (Key::Minus, Mod::new()),
         "Equal" => (Key::Equal, Mod::new()),
-        "Insert" => (Key::Enter, Mod::new().add_fn()),
-        "PageUp" => (Key::Up, Mod::new().add_fn()),
-        "PageDown" => (Key::Down, Mod::new().add_fn()),
-        "Home" => (Key::Left, Mod::new().add_fn()),
-        "End" => (Key::Right, Mod::new().add_fn()),
+        "Insert" => (Key::Insert, Mod::new()),
+        "PageUp" => (Key::PageUp, Mod::new()),
+        "PageDown" => (Key::PageDown, Mod::new()),
+        "Home" => (Key::Home, Mod::new()),
+        "End" => (Key::End, Mod::new()),
         "Backslash" => (Key::Backslash, Mod::new()),
         "BracketLeft" => (Key::BracketOpen, Mod::new()),
         "BracketRight" => (Key::BracketClose, Mod::new()),
@@ -172,37 +213,56 @@ fn keycode(keycode: &str) -> Option<(Key, Mod)> {
         "Slash" => (Key::Slash, Mod::new()),
         "Period" | "NumpadDecimal" => (Key::Period, Mod::new()),
         "Comma" => (Key::Comma, Mod::new()),
-        "Pause" => (Key::Space, Mod::new().add_fn()),
-        "ContextMenu" => (Key::LCtrl, Mod::new().add_fn()),
+        "Pause" => (Key::Pause, Mod::new()),
+        "ContextMenu" => (Key::Menu, Mod::new()),
         "Backquote" => (Key::Backtick, Mod::new()),
-        "F1" => (Key::One, Mod::new().add_fn()),
-        "F2" => (Key::Two, Mod::new().add_fn()),
-        "F3" => (Key::Three, Mod::new().add_fn()),
-        "F4" => (Key::Four, Mod::new().add_fn()),
-        "F5" => (Key::Five, Mod::new().add_fn()),
-        "F6" => (Key::Six, Mod::new().add_fn()),
-        "F7" => (Key::Seven, Mod::new().add_fn()),
-        "F8" => (Key::Eight, Mod::new().add_fn()),
-        "F9" => (Key::Nine, Mod::new().add_fn()),
-        "F10" => (Key::Zero, Mod::new().add_fn()),
-        "F11" => (Key::Minus, Mod::new().add_fn()),
-        "F12" => (Key::Equal, Mod::new().add_fn()),
+        "F1" => (Key::F1, Mod::new()),
+        "F2" => (Key::F2, Mod::new()),
+        "F3" => (Key::F3, Mod::new()),
+        "F4" => (Key::F4, Mod::new()),
+        "F5" => (Key::F5, Mod::new()),
+        "F6" => (Key::F6, Mod::new()),
+        "F7" => (Key::F7, Mod::new()),
+        "F8" => (Key::F8, Mod::new()),
+        "F9" => (Key::F9, Mod::new()),
+        "F10" => (Key::F10, Mod::new()),
+        "F11" => (Key::F11, Mod::new()),
+        "F12" => (Key::F12, Mod::new()),
         "NumpadDivide" => (Key::Slash, Mod::new()),
         "NumpadMultiply" => (Key::Eight, Mod::new().add_shift()),
         "NumpadSubtract" => (Key::Minus, Mod::new()),
         "NumpadAdd" => (Key::Equal, Mod::new().add_shift()),
         "NumLock" => (Key::Compose, Mod::new()),
-        "CapsLock" => (Key::Compose, Mod::new()),
+        "CapsLock" => (Key::CapsLock, Mod::new()),
         "ScrollLock" => (Key::Compose, Mod::new()),
         "ShiftLeft" => (Key::LShift, Mod::new()),
         "ShiftRight" => (Key::RShift, Mod::new()),
-        "ControlLeft" | "MetaLeft" | "OSLeft" => (Key::LCtrl, Mod::new()),
-        "ControlRight" | "MetaRight" | "OSRight" => (Key::RCtrl, Mod::new()),
+        "" | "ControlLeft" | "MetaLeft" => (Key::LCtrl, Mod::new()),
+        "ControlRight" | "MetaRight" => (Key::RCtrl, Mod::new()),
+        "OSLeft" | "OSRight" => (Key::Env, Mod::new()),
         "AltLeft" => (Key::LAlt, Mod::new()),
         "AltRight" => (Key::RAlt, Mod::new()),
-        _ => return None,
+        _x => return None,
     };
     Some(key)
+}
+
+/// Convert into pixels.
+pub(crate) fn delta(mode: u32, value: f32) -> f32 {
+    match mode {
+        0x00 => value,
+        0x01 => value * 16.0,
+        0x02 => {
+            value
+                * (web_sys::window()
+                    .unwrap()
+                    .inner_height()
+                    .unwrap()
+                    .as_f64()
+                    .unwrap() as f32)
+        }
+        _ => unreachable!(),
+    }
 }
 
 /// One type future initialization for key presses and mouse events.
@@ -217,15 +277,15 @@ pub(crate) fn init() {
         .set_attribute(
             "style",
             "\
-        border:0;\
-        padding:0;\
-        margin:0;\
-        position:fixed;\
-        top:0;\
-        left:0;\
-        width:0;\
-        height:0;\
-    ",
+                border:0;\
+                padding:0;\
+                margin:0;\
+                position:fixed;\
+                top:0;\
+                left:0;\
+                width:0;\
+                height:0;\
+            ",
         )
         .unwrap();
     localized_input
@@ -316,10 +376,10 @@ pub(crate) fn init() {
                 // Set future to complete.
                 let mut sys_mods = false;
                 if let Some(mut keycode) = keycode(&event.code()) {
-                    sys_mods = sys_modifier(&event, &mut keycode.1);
+                    sys_mods = key_modifier(&event, &mut keycode.1);
                     if key_down_state(keycode.0) {
                         state().input =
-                            Some(Input::KeyPress(keycode.1, keycode.0));
+                            Some(Input::Key(keycode.1, keycode.0, true));
                     } else {
                         state().input = None;
                     }
@@ -354,10 +414,10 @@ pub(crate) fn init() {
                 // Set future to complete.
                 let mut sys_mods = false;
                 if let Some(mut keycode) = keycode(&event.code()) {
-                    sys_mods = sys_modifier(&event, &mut keycode.1);
+                    sys_mods = key_modifier(&event, &mut keycode.1);
                     if key_up_state(keycode.0) {
                         state().input =
-                            Some(Input::KeyRelease(keycode.1, keycode.0));
+                            Some(Input::Key(keycode.1, keycode.0, false));
                     } else {
                         state().input = None;
                     }
@@ -386,4 +446,191 @@ pub(crate) fn init() {
 
     let localized_input: HtmlElement = localized_input.dyn_into().unwrap();
     localized_input.focus().unwrap();
+
+    #[allow(trivial_casts)] // Actually needed here.
+    let mouse_down: Closure<dyn Fn(MouseEvent)> =
+        Closure::wrap(Box::new(move |event: MouseEvent| {
+            let mods = ptr_modifier(&event);
+
+            // If a input is being `.await`ed, wake the waiting thread.
+            if let Some(ref waker) = state().waker {
+                // Set future to complete.
+                state().input = match event.button() {
+                    0 => Some(Input::Click(mods, Btn::Left, true)),
+                    1 => Some(Input::Click(mods, Btn::Middle, true)),
+                    2 => Some(Input::Click(mods, Btn::Right, true)),
+                    3 => Some(Input::Click(mods, Btn::Back, true)),
+                    4 => Some(Input::Click(mods, Btn::Next, true)),
+                    _ => Some(Input::Click(mods, Btn::Extra, true)),
+                };
+
+                // Wake the keyboard future.
+                waker.wake_by_ref();
+            }
+        }));
+    web_sys::window()
+        .unwrap()
+        .add_event_listener_with_callback(
+            "mousedown",
+            mouse_down.as_ref().unchecked_ref(),
+        )
+        .unwrap();
+    mouse_down.forget();
+
+    #[allow(trivial_casts)] // Actually needed here.
+    let mouse_up: Closure<dyn Fn(MouseEvent)> =
+        Closure::wrap(Box::new(move |event: MouseEvent| {
+            let mods = ptr_modifier(&event);
+
+            // If a input is being `.await`ed, wake the waiting thread.
+            if let Some(ref waker) = state().waker {
+                // Set future to complete.
+                state().input = match event.button() {
+                    0 => Some(Input::Click(mods, Btn::Left, false)),
+                    1 => Some(Input::Click(mods, Btn::Middle, false)),
+                    2 => Some(Input::Click(mods, Btn::Right, false)),
+                    3 => Some(Input::Click(mods, Btn::Back, false)),
+                    4 => Some(Input::Click(mods, Btn::Next, false)),
+                    _ => Some(Input::Click(mods, Btn::Extra, false)),
+                };
+
+                // Wake the keyboard future.
+                waker.wake_by_ref();
+            }
+        }));
+    web_sys::window()
+        .unwrap()
+        .add_event_listener_with_callback(
+            "mouseup",
+            mouse_up.as_ref().unchecked_ref(),
+        )
+        .unwrap();
+    mouse_up.forget();
+
+    #[allow(trivial_casts)] // Actually needed here.
+    let context_menu: Closure<dyn Fn(Event)> =
+        Closure::wrap(Box::new(move |event: Event| {
+            // If a input is being `.await`ed,
+            if state().waker.is_some() {
+                // Ignore these events, and don't let the browser process them.
+                event.stop_propagation();
+                event.prevent_default();
+            }
+        }));
+    web_sys::window()
+        .unwrap()
+        .add_event_listener_with_callback(
+            "contextmenu",
+            context_menu.as_ref().unchecked_ref(),
+        )
+        .unwrap();
+    context_menu.forget();
+
+    #[allow(trivial_casts)] // Actually needed here.
+    let wheel: Closure<dyn Fn(WheelEvent)> =
+        Closure::wrap(Box::new(move |event: WheelEvent| {
+            let mods = ptr_modifier(&event);
+            let width = web_sys::window()
+                .unwrap()
+                .inner_width()
+                .unwrap()
+                .as_f64()
+                .unwrap();
+            let width = width as f32;
+            let delta_mode = event.delta_mode();
+
+            // If a input is being `.await`ed, wake the waiting thread.
+            if let Some(ref waker) = state().waker {
+                let x = delta(delta_mode, event.delta_x() as f32) / width;
+                if x.abs() > f32::EPSILON {
+                    state().input = Some(Input::ScrollX(mods, x));
+
+                    // Wake the keyboard future.
+                    waker.wake_by_ref();
+                }
+            }
+            // If a input is being `.await`ed, wake the waiting thread.
+            if let Some(ref waker) = state().waker {
+                let y = delta(delta_mode, event.delta_y() as f32) / width;
+                if y.abs() > f32::EPSILON {
+                    state().input = Some(Input::ScrollY(mods, y));
+
+                    // Wake the keyboard future.
+                    waker.wake_by_ref();
+                }
+            }
+
+            // Prevent zoom and scroll.
+            event.stop_propagation();
+            event.prevent_default();
+        }));
+    web_sys::window()
+        .unwrap()
+        .add_event_listener_with_callback_and_add_event_listener_options(
+            "wheel",
+            wheel.as_ref().unchecked_ref(),
+            &AddEventListenerOptions::new().passive(false),
+        )
+        .unwrap();
+    wheel.forget();
+
+    #[allow(trivial_casts)] // Actually needed here.
+    let mouse_move: Closure<dyn Fn(MouseEvent)> =
+        Closure::wrap(Box::new(move |event: MouseEvent| {
+            let width = web_sys::window()
+                .unwrap()
+                .inner_width()
+                .unwrap()
+                .as_f64()
+                .unwrap();
+            let width = width as f32 - 1.0;
+
+            // If a input is being `.await`ed, wake the waiting thread.
+            if let Some(ref waker) = state().waker {
+                let x = event.client_x() as f32 / width;
+                if x.abs() > f32::EPSILON {
+                    state().input = Some(Input::PointerX(x));
+
+                    // Wake the keyboard future.
+                    waker.wake_by_ref();
+                }
+            }
+            // If a input is being `.await`ed, wake the waiting thread.
+            if let Some(ref waker) = state().waker {
+                let y = event.client_y() as f32 / width;
+                if y.abs() > f32::EPSILON {
+                    state().input = Some(Input::PointerY(y));
+
+                    // Wake the keyboard future.
+                    waker.wake_by_ref();
+                }
+            }
+        }));
+    web_sys::window()
+        .unwrap()
+        .add_event_listener_with_callback(
+            "mousemove",
+            mouse_move.as_ref().unchecked_ref(),
+        )
+        .unwrap();
+    mouse_move.forget();
+
+    #[allow(trivial_casts)] // Actually needed here.
+    let mouse_leave: Closure<dyn Fn(MouseEvent)> =
+        Closure::wrap(Box::new(move |_event: MouseEvent| {
+            // If a input is being `.await`ed, wake the waiting thread.
+            if let Some(ref waker) = state().waker {
+                state().input = Some(Input::PointerLeave);
+                // Wake the keyboard future.
+                waker.wake_by_ref();
+            }
+        }));
+    web_sys::window()
+        .unwrap()
+        .add_event_listener_with_callback(
+            "mouseout",
+            mouse_leave.as_ref().unchecked_ref(),
+        )
+        .unwrap();
+    mouse_leave.forget();
 }

@@ -53,8 +53,8 @@
 //! ```
 
 #![doc(
-    html_logo_url = "https://raw.githubusercontent.com/libcala/human/master/res/logo.svg",
-    html_favicon_url = "https://raw.githubusercontent.com/libcala/human/master/res/logo.svg",
+    html_logo_url = "https://raw.githubusercontent.com/libcala/human/main/res/icon.svg",
+    html_favicon_url = "https://raw.githubusercontent.com/libcala/human/main/res/icon.svg",
     html_root_url = "https://docs.rs/human"
 )]
 #![deny(unsafe_code)]
@@ -76,12 +76,14 @@
 
 mod input;
 mod key;
+mod btn;
 
 #[cfg(target_arch = "wasm32")]
 mod web;
 
 pub use input::{Controller, Input};
 pub use key::{Key, Mod};
+pub use btn::Btn;
 /// Input event from a controller.
 ///
 pub use stick::Event as Controls;

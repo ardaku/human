@@ -14,7 +14,7 @@ use std::{
     task::{Context, Poll},
 };
 
-use crate::{Controls, Key, Mod};
+use crate::{Controls, Key, Mod, Btn};
 
 /// A gamepad, flightstick, smartphone, or other controller.
 #[derive(Debug)]
@@ -48,31 +48,34 @@ impl Future for Controller {
 
 /// Input event from any human interface device
 #[derive(Debug)]
+#[non_exhaustive]
 pub enum Input {
     /// User inputted text.
     Text(char),
-    /// A key on the keyboard was pressed.
-    KeyPress(Mod, Key),
-    /// A key on the keyboard was released.
-    KeyRelease(Mod, Key),
-    /// The pointer was moved in the X dimension (absolute coordinates).
-    PointerX(f64),
-    /// The pointer was moved in the Y dimension (absolute coordinates).
-    PointerY(f64),
+    /// A key on the keyboard was pressed or released.
+    Key(Mod, Key, bool),
+    /// Pointer button was pressed or released (Left click, Tap).
+    Click(Mod, Btn, bool),
     /// The pointer has left the window.
     PointerLeave,
     /// Request to shift the viewport in the X dimension (relative coordinates).
-    ScrollX(f64),
+    ScrollX(Mod, f32),
     /// Request to shift the viewport in the Y dimension (relative coordinates).
-    ScrollY(f64),
-    /// 2-Finger Pinch Starting Width Changed.
-    PinchW(f64),
-    /// 2-Finger Pinch Starting Height Changed.
-    PinchH(f64),
-    /// 2-Finger Pinch Width Change.
-    ScaleW(f64),
-    /// 2-Finger Pinch Height Change.
-    ScaleH(f64),
+    ScrollY(Mod, f32),
+    /// The pointer was moved in the X dimension (absolute coordinates).
+    PointerX(f32),
+    /// The pointer was moved in the Y dimension (absolute coordinates).
+    PointerY(f32),
+    /// Touchscreen was touched with one finger.
+    Touch(bool),
+    /// Touchscreen was touched with two fingers.
+    Pinch(bool),
+    /// Pinch width has changed.
+    PinchW(f32),
+    /// Pinch height has changed.
+    PinchH(f32),
+    /// Rotation Amount
+    PinchZ(f32),
     /// New controller plugged in.
     Controller(Controller),
 }
@@ -94,8 +97,16 @@ where
         {
             return Poll::Ready(Input::Controller(Controller(new)));
         }
-        #[cfg(target_arch = "wasm32")] { crate::web::poll(cx) }
-        #[cfg(not(target_arch = "wasm32"))] { Poll::Pending }
+
+        #[cfg(target_arch = "wasm32")]
+        {
+            crate::web::poll(cx)
+        }
+
+        #[cfg(not(target_arch = "wasm32"))]
+        {
+            Poll::Pending
+        }
     }
 }
 
