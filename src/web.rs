@@ -22,7 +22,7 @@ use web_sys::{
     InputEvent, KeyboardEvent, MouseEvent, WheelEvent,
 };
 
-use crate::{Input, Key, Mod};
+use crate::{Input, Key, Mod, Btn};
 
 struct WebInput {
     input: Option<Input>,
@@ -237,29 +237,29 @@ fn keycode(keycode: &str) -> Option<(Key, Mod)> {
         "ScrollLock" => (Key::Compose, Mod::new()),
         "ShiftLeft" => (Key::LShift, Mod::new()),
         "ShiftRight" => (Key::RShift, Mod::new()),
-        "ControlLeft" | "MetaLeft" => (Key::LCtrl, Mod::new()),
+        "" | "ControlLeft" | "MetaLeft" => (Key::LCtrl, Mod::new()),
         "ControlRight" | "MetaRight" => (Key::RCtrl, Mod::new()),
         "OSLeft" | "OSRight" => (Key::Env, Mod::new()),
         "AltLeft" => (Key::LAlt, Mod::new()),
         "AltRight" => (Key::RAlt, Mod::new()),
-        _ => return None,
+        _x => return None,
     };
     Some(key)
 }
 
 /// Convert into pixels.
-pub(crate) fn delta(mode: u32, value: f64) -> f64 {
+pub(crate) fn delta(mode: u32, value: f32) -> f32 {
     match mode {
         0x00 => value,
         0x01 => value * 16.0,
         0x02 => {
             value
-                * web_sys::window()
+                * (web_sys::window()
                     .unwrap()
                     .inner_height()
                     .unwrap()
                     .as_f64()
-                    .unwrap()
+                    .unwrap() as f32)
         }
         _ => unreachable!(),
     }
@@ -455,19 +455,13 @@ pub(crate) fn init() {
             // If a input is being `.await`ed, wake the waiting thread.
             if let Some(ref waker) = state().waker {
                 // Set future to complete.
-                state().input = match (mods, event.button()) {
-                    (m, 0) if m.ctrl() => Some(Input::Context(true)),
-                    (m, 1) if m.ctrl() => Some(Input::Context(true)),
-                    (m, 2) if m.ctrl() => Some(Input::Central(true)),
-                    (m, 0) if m.alt() => Some(Input::Central(true)),
-                    (m, 1) if m.alt() => Some(Input::Context(true)),
-                    (m, 2) if m.alt() => Some(Input::Central(true)),
-                    (m, 2) if m.shift() => None,
-                    (m, _) if m.shift() => Some(Input::SelArea(true)),
-                    (_, 0) => Some(Input::Pointer(true)),
-                    (_, 1) => Some(Input::Central(true)),
-                    (_, 2) => Some(Input::Context(true)),
-                    _ => None,
+                state().input = match event.button() {
+                    0 => Some(Input::Click(mods, Btn::Left, true)),
+                    1 => Some(Input::Click(mods, Btn::Middle, true)),
+                    2 => Some(Input::Click(mods, Btn::Right, true)),
+                    3 => Some(Input::Click(mods, Btn::Back, true)),
+                    4 => Some(Input::Click(mods, Btn::Next, true)),
+                    _ => Some(Input::Click(mods, Btn::Extra, true)),
                 };
 
                 // Wake the keyboard future.
@@ -491,19 +485,13 @@ pub(crate) fn init() {
             // If a input is being `.await`ed, wake the waiting thread.
             if let Some(ref waker) = state().waker {
                 // Set future to complete.
-                state().input = match (mods, event.button()) {
-                    (m, 0) if m.ctrl() => Some(Input::Context(false)),
-                    (m, 1) if m.ctrl() => Some(Input::Context(false)),
-                    (m, 2) if m.ctrl() => Some(Input::Central(false)),
-                    (m, 0) if m.alt() => Some(Input::Central(false)),
-                    (m, 1) if m.alt() => Some(Input::Context(false)),
-                    (m, 2) if m.alt() => Some(Input::Central(false)),
-                    (m, 2) if m.shift() => None,
-                    (m, _) if m.shift() => Some(Input::SelArea(false)),
-                    (_, 0) => Some(Input::Pointer(false)),
-                    (_, 1) => Some(Input::Central(false)),
-                    (_, 2) => Some(Input::Context(false)),
-                    _ => None,
+                state().input = match event.button() {
+                    0 => Some(Input::Click(mods, Btn::Left, false)),
+                    1 => Some(Input::Click(mods, Btn::Middle, false)),
+                    2 => Some(Input::Click(mods, Btn::Right, false)),
+                    3 => Some(Input::Click(mods, Btn::Back, false)),
+                    4 => Some(Input::Click(mods, Btn::Next, false)),
+                    _ => Some(Input::Click(mods, Btn::Extra, false)),
                 };
 
                 // Wake the keyboard future.
@@ -548,18 +536,14 @@ pub(crate) fn init() {
                 .unwrap()
                 .as_f64()
                 .unwrap();
+            let width = width as f32;
             let delta_mode = event.delta_mode();
 
             // If a input is being `.await`ed, wake the waiting thread.
             if let Some(ref waker) = state().waker {
-                let x = delta(delta_mode, event.delta_x()) / width;
-                if x.abs() > f64::EPSILON {
-                    state().input = match mods {
-                        m if m.none() => Some(Input::ScrollX(x)),
-                        m if m.ctrl() => Some(Input::Zoom(1.0 + x)),
-                        m if m.alt() || m.func() => Some(Input::Rotate(x)),
-                        _ => Some(Input::ScrollY(x)),
-                    };
+                let x = delta(delta_mode, event.delta_x() as f32) / width;
+                if x.abs() > f32::EPSILON {
+                    state().input = Some(Input::ScrollX(mods, x));
 
                     // Wake the keyboard future.
                     waker.wake_by_ref();
@@ -567,14 +551,9 @@ pub(crate) fn init() {
             }
             // If a input is being `.await`ed, wake the waiting thread.
             if let Some(ref waker) = state().waker {
-                let y = delta(delta_mode, event.delta_y()) / width;
-                if y.abs() > f64::EPSILON {
-                    state().input = match mods {
-                        m if m.none() => Some(Input::ScrollY(y)),
-                        m if m.ctrl() => Some(Input::Zoom(1.0 - y)),
-                        m if m.alt() || m.func() => Some(Input::Rotate(y)),
-                        _ => Some(Input::ScrollX(y)),
-                    };
+                let y = delta(delta_mode, event.delta_y() as f32) / width;
+                if y.abs() > f32::EPSILON {
+                    state().input = Some(Input::ScrollY(mods, y));
 
                     // Wake the keyboard future.
                     waker.wake_by_ref();
@@ -603,13 +582,13 @@ pub(crate) fn init() {
                 .inner_width()
                 .unwrap()
                 .as_f64()
-                .unwrap()
-                - 1.0;
+                .unwrap();
+            let width = width as f32 - 1.0;
 
             // If a input is being `.await`ed, wake the waiting thread.
             if let Some(ref waker) = state().waker {
-                let x = event.client_x() as f64 / width;
-                if x.abs() > f64::EPSILON {
+                let x = event.client_x() as f32 / width;
+                if x.abs() > f32::EPSILON {
                     state().input = Some(Input::PointerX(x));
 
                     // Wake the keyboard future.
@@ -618,8 +597,8 @@ pub(crate) fn init() {
             }
             // If a input is being `.await`ed, wake the waiting thread.
             if let Some(ref waker) = state().waker {
-                let y = event.client_y() as f64 / width;
-                if y.abs() > f64::EPSILON {
+                let y = event.client_y() as f32 / width;
+                if y.abs() > f32::EPSILON {
                     state().input = Some(Input::PointerY(y));
 
                     // Wake the keyboard future.

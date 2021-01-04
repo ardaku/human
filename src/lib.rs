@@ -76,12 +76,14 @@
 
 mod input;
 mod key;
+mod btn;
 
 #[cfg(target_arch = "wasm32")]
 mod web;
 
 pub use input::{Controller, Input};
 pub use key::{Key, Mod};
+pub use btn::Btn;
 /// Input event from a controller.
 ///
 pub use stick::Event as Controls;

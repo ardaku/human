@@ -14,7 +14,7 @@ use std::{
     task::{Context, Poll},
 };
 
-use crate::{Controls, Key, Mod};
+use crate::{Controls, Key, Mod, Btn};
 
 /// A gamepad, flightstick, smartphone, or other controller.
 #[derive(Debug)]
@@ -54,32 +54,27 @@ pub enum Input {
     /// A key on the keyboard was pressed or released.
     Key(Mod, Key, bool),
     /// Pointer button was pressed or released (Left click, Tap).
-    Pointer(bool),
-    /// Context button was pressed or released (Right click, Ctrl-Click, Menu
-    /// Button, or Long Tap - note that long touch will still send `Pointer`
-    /// event).
-    Context(bool),
-    /// Central button was pressed or released (Middle click, Alt-Click,
-    /// Two-Finger Tap).
-    Central(bool),
-    /// Selection Area (Shift + Click only).
-    SelArea(bool),
-    /// The pointer was moved in the X dimension (absolute coordinates).
-    PointerX(f64),
-    /// The pointer was moved in the Y dimension (absolute coordinates).
-    PointerY(f64),
+    Click(Mod, Btn, bool),
     /// The pointer has left the window.
     PointerLeave,
     /// Request to shift the viewport in the X dimension (relative coordinates).
-    ScrollX(f64),
+    ScrollX(Mod, f32),
     /// Request to shift the viewport in the Y dimension (relative coordinates).
-    ScrollY(f64),
-    /// Request to zoom the viewport (2-Finger Pinch, or Ctrl-Scroll).  Units
-    /// are relative to previous zoom level.
-    Zoom(f64),
-    /// Request to rotate the viewport (2-Finger Twist, or Alt-Scroll).  Units
-    /// are in rotations.
-    Rotate(f64),
+    ScrollY(Mod, f32),
+    /// The pointer was moved in the X dimension (absolute coordinates).
+    PointerX(f32),
+    /// The pointer was moved in the Y dimension (absolute coordinates).
+    PointerY(f32),
+    /// Touchscreen was touched with one finger.
+    Touch(bool),
+    /// Touchscreen was touched with two fingers.
+    Pinch(bool),
+    /// Pinch width has changed.
+    PinchW(f32),
+    /// Pinch height has changed.
+    PinchH(f32),
+    /// Rotation Amount
+    PinchZ(f32),
     /// New controller plugged in.
     Controller(Controller),
 }

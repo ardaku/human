@@ -14,23 +14,12 @@ const MOD_SHIFT: u8 = 0b0000_0001;
 const MOD_CTRL: u8 = 0b0000_0010;
 const MOD_ALT: u8 = 0b0000_0100;
 
-const MOD_CTRL_SHIFT: u8 = MOD_CTRL | MOD_SHIFT;
-const MOD_ALT_SHIFT: u8 = MOD_ALT | MOD_SHIFT;
-const MOD_CTRL_ALT: u8 = MOD_CTRL | MOD_ALT;
-const MOD_CTRL_ALT_SHIFT: u8 = MOD_CTRL_SHIFT | MOD_ALT_SHIFT;
-
 /// Modifier state.
 #[repr(transparent)]
 #[derive(Copy, Clone, Default)]
 pub struct Mod(u8);
 
 impl Mod {
-    /// Check if any combination of modifiers are held or not (minus the
-    /// function key).
-    pub fn any(self) -> bool {
-        !self.func()
-    }
-
     /// Check if no modifiers are held down.
     pub fn none(self) -> bool {
         self.0 == 0
@@ -42,30 +31,13 @@ impl Mod {
     }
 
     /// Check if CTRL or CMD is held down.
-    ///
-    /// Also triggered with SHIFT+ALT
     pub fn ctrl(self) -> bool {
-        let is_ctrl = (self.0 & MOD_CTRL_ALT_SHIFT) == MOD_CTRL;
-        let is_shift_alt = (self.0 & MOD_CTRL_ALT_SHIFT) == MOD_ALT_SHIFT;
-
-        is_ctrl || is_shift_alt
+        (self.0 & MOD_CTRL) == MOD_CTRL
     }
 
     /// Check if ALT or OPTION is held down.
-    ///
-    /// Also triggered with SHIFT+CTRL
     pub fn alt(self) -> bool {
-        let is_shift_ctrl = (self.0 & MOD_CTRL_ALT_SHIFT) == MOD_CTRL_SHIFT;
-        let is_alt = (self.0 & MOD_CTRL_ALT_SHIFT) == MOD_ALT;
-
-        is_shift_ctrl || is_alt
-    }
-
-    /// Check if CTRL+ALT is held down.
-    pub fn func(self) -> bool {
-        let is_ctrl_alt = (self.0 & MOD_CTRL_ALT) == MOD_CTRL_ALT;
-
-        is_ctrl_alt
+        (self.0 & MOD_ALT) == MOD_ALT
     }
 
     /// No modifiers.
@@ -92,20 +64,26 @@ impl Mod {
 impl Debug for Mod {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         if self.ctrl() {
-            write!(f, "Ctrl")?;
-        } else if self.alt() {
-            write!(f, "Alt")?;
-        } else if self.shift() {
-            write!(f, "Shift")?;
-            if self.func() {
-                write!(f, " + Fn")?;
+            if self.alt() {
+                if self.shift() {
+                    write!(f, "Ctrl + Alt + Shift")
+                } else {
+                    write!(f, "Ctrl + Alt")
+                }
+            } else {
+                write!(f, "Ctrl")
             }
-        } else if self.func() {
-            write!(f, "Fn")?;
+        } else if self.alt() {
+            if self.shift() {
+                write!(f, "Alt + Shift")
+            } else {
+                write!(f, "Alt")
+            }
+        } else if self.shift() {
+            write!(f, "Shift")
         } else {
-            write!(f, "None")?;
+            write!(f, "None")
         }
-        Ok(())
     }
 }
 
