@@ -49,7 +49,7 @@ version = "0.2"
 [build-dependencies]
 
 [dev-dependencies]
-pasts = "0.7"
+pasts = "0.11"
 devout = "0.2"
 
 [package.metadata.docs.rs]

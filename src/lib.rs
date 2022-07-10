@@ -18,7 +18,7 @@
 //! ```
 //!
 //! ```rust,no_run
-//! use pasts::{exec, wait};
+//! use pasts::{Join, prelude::*};
 //! use devout::{log, Tag};
 //! use human::Input;
 //!
@@ -46,8 +46,10 @@
 //!     let mut state = State {};
 //!     let mut input = human::Input::listener();
 //!
-//!     exec!(state.event(wait! {
-//!         Event::Input((&mut input).await),
+//!     pasts::Executor::default().spawn(Box::pin(async move {
+//!        loop {
+//!            state.event(Event::Input((&mut input).await));
+//!        }
 //!     }));
 //! }
 //! ```
