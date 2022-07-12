@@ -9,11 +9,11 @@
 // LICENSE_MIT.txt and LICENSE_BOOST_1_0.txt).
 
 use std::{
-    future::Future,
     pin::Pin,
     task::{Context, Poll},
 };
 
+use pasts::{Notifier, prelude::*};
 use crate::{Controls, Key, Mod, Btn};
 
 /// A gamepad, flightstick, smartphone, or other controller.
@@ -38,10 +38,10 @@ impl Controller {
     }
 }
 
-impl Future for Controller {
-    type Output = Controls;
+impl Notifier for Controller {
+    type Event = Controls;
 
-    fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
+    fn poll_next(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Event> {
         Pin::new(&mut self.get_mut().0).poll(cx)
     }
 }
@@ -80,18 +80,19 @@ pub enum Input {
     Controller(Controller),
 }
 
-struct InputListener<T: Future<Output = (usize, Controls)> + Unpin> {
+struct InputListener<T: Future + Unpin> {
     ctlr: T,
 }
 
-impl<T> Future for InputListener<T>
+impl<T> Notifier for InputListener<T>
 where
     T: Future<Output = (usize, Controls)> + Unpin,
 {
-    type Output = Input;
+    type Event = Input;
 
-    fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
+    fn poll_next(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Event> {
         let this = self.get_mut();
+        
         if let Poll::Ready((_, Controls::Connect(new))) =
             Pin::new(&mut this.ctlr).poll(cx)
         {
@@ -111,9 +112,8 @@ where
 }
 
 impl Input {
-    /// Get a future that returns input events.  You may only call this once,
-    /// because multiple threads reading the same input wouldn't logically work.
-    pub fn listener() -> impl Future<Output = Input> {
+    /// Get a notifier that returns input events.
+    pub fn listener() -> impl Notifier<Event = Input> {
         #[cfg(target_arch = "wasm32")]
         crate::web::init();
 
