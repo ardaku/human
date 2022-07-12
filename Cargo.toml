@@ -46,10 +46,12 @@ features = [
 [target.'cfg(target_arch = "wasm32")'.dependencies.wasm-bindgen]
 version = "0.2"
 
+[dependencies]
+pasts = "0.11.0"
+
 [build-dependencies]
 
 [dev-dependencies]
-pasts = "0.11"
 devout = "0.2"
 
 [package.metadata.docs.rs]
